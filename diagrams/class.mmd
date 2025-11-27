@@ -38,6 +38,11 @@ classDiagram
         + GetMovementInput() Vector2
     }
 
+    class IDirectionProvider {
+        <<interface>>
+        + GetNextDirection() Vector2
+    }
+
     class ILevelManager {
         <<interface>>
         + LoadLevel(int)
@@ -90,7 +95,7 @@ classDiagram
     %% Entities
     class PacManController {
         <<MonoBehaviour>>
-        - IInputReader inputReader
+        - IDirectionProvider directionProvider
         - IMovement movement
         + Position : Vector2
         + OnCollision(IEntity)
@@ -109,11 +114,13 @@ classDiagram
     class InputReader {
         <<MonoBehaviour>>
         + GetMovementInput() Vector2
+        + GetNextDirection() Vector2
     }
 
     class GhostController {
         <<MonoBehaviour>>
         - GhostStateMachine stateMachine
+        - IDirectionProvider directionProvider
         - IMovement movement
         - IPathfindingService pathfinding
         + Position : Vector2
@@ -121,6 +128,15 @@ classDiagram
         + OnDestroy()
         + SetStrategy(IGhostStrategy)
         + Update()
+    }
+
+    class GhostAI {
+        <<C# Class>>
+        - IGhostStrategy strategy
+        - IPathfindingService pathfinding
+        - Transform target
+        + GetNextDirection() Vector2
+        + SetStrategy(IGhostStrategy)
     }
 
     class Pellet {
@@ -183,6 +199,8 @@ IScoreManager <|.. ScoreManager
 IAudioService <|.. AudioService
 IPathfindingService <|.. PathfindingService
 IInputReader <|.. InputReader
+IDirectionProvider <|.. InputReader
+IDirectionProvider <|.. GhostAI
 IMovement <|.. GridMovement
 
 %% Entity Implementations
@@ -202,18 +220,20 @@ GameManager --> IAudioService
 %% Entity Dependencies
 PacManController --> IEventBus
 PacManController --> IMovement
-PacManController --> IInputReader
+PacManController --> IDirectionProvider
 
 GhostController --> IEventBus
 GhostController --> IMovement
-GhostController --> IPathfindingService
-GhostController --> GhostStateMachine
+GhostController --> IDirectionProvider
 
 GridMovement --> ILevelManager
 
 Pellet --> IEventBus
 
 %% Ghost AI
+GhostController --> GhostStateMachine
+GhostAI --> IGhostStrategy
+GhostAI --> IPathfindingService
 GhostStateMachine --> IGhostStrategy
 IGhostStrategy <|.. ChaseStrategy
 IGhostStrategy <|.. ScatterStrategy
