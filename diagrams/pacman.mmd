@@ -1,0 +1,19 @@
+flowchart TD
+
+A[Start Turn] --> B[Read Player Input]
+B --> C[Compute Movement Direction]
+C --> D{Is Next Tile Walkable?}
+
+D -- No --> A
+D -- Yes --> E[Move Pac-Man]
+
+E --> F{Collision?}
+F -- Pellet --> G[Emit PelletEaten Event]
+F -- PowerPellet --> H[Emit PowerPelletEaten Event]
+F -- Ghost (Frightened) --> I[Emit GhostEaten Event]
+F -- Ghost (Normal) --> J[Emit PacManDied Event]
+
+G --> A
+H --> A
+I --> A
+J --> A

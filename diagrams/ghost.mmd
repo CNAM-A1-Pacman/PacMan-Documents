@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Scatter
+
+    Scatter --> Chase : TimerEnds
+    Chase --> Scatter : TimerEnds
+
+    Scatter --> Frightened : PowerPellet
+    Chase --> Frightened : PowerPellet
+
+    Frightened --> Eaten : CaughtByPacman
+    Eaten --> Scatter : ReachedGhostHouse

@@ -1,0 +1,69 @@
+graph LR
+
+subgraph Core Systems
+    GM[GameManager]
+    SM[ScoreManager : IScoreManager]
+    LM[LevelManager : ILevelManager]
+    EM[EventBus : IEventBus]
+    UI[UIManager]
+end
+
+subgraph Input
+    IR[InputReader : IInputReader]
+end
+
+subgraph Entities
+    Pac[PacManController : IEntity]
+    Ghost[GhostController : IEntity]
+    Pellet[Pellet : IEntity]
+    PowerPellet[PowerPellet extends Pellet]
+end
+
+subgraph Movement
+    GridMov[GridMovement : IMovement]
+end
+
+subgraph AI
+    GS[GhostStateMachine]
+    Strat[IGhostStrategy]
+    CHS[ChaseStrategy]
+    SCS[ScatterStrategy]
+    FRS[FrightenedStrategy]
+end
+
+subgraph Services
+    PF[PathfindingService : IPathfindingService]
+    AUD[AudioService : IAudioService]
+end
+
+%% Entity to EventBus (via interface)
+Pac -- uses IEventBus --> EM
+Ghost -- uses IEventBus --> EM
+Pellet -- uses IEventBus --> EM
+
+%% Managers use interfaces
+GM -- uses IEventBus --> EM
+GM -- uses ILevelManager --> LM
+GM -- uses IScoreManager --> SM
+GM -- uses IAudioService --> AUD
+SM -- uses IEventBus --> EM
+UI -- uses IEventBus --> EM
+
+%% Entity dependencies
+Pac -- uses IInputReader --> IR
+Pac -- uses IMovement --> GridMov
+Ghost -- uses IMovement --> GridMov
+Ghost --> GS
+
+%% Movement dependencies
+GridMov -- uses ILevelManager --> LM
+
+%% AI
+GS --> Strat
+Strat -.implements.-> CHS
+Strat -.implements.-> SCS
+Strat -.implements.-> FRS
+
+%% Service dependencies
+Ghost -- uses IPathfindingService --> PF
+PF -- uses ILevelManager --> LM

@@ -1,0 +1,222 @@
+classDiagram
+
+    %% Core Interfaces
+    class IEntity {
+        <<interface>>
+        + Position : Vector2
+        + OnCollision(IEntity)
+        + OnDestroy()
+    }
+
+    class IMovement {
+        <<interface>>
+        + Move(direction : Vector2)
+        + CanMoveTo(position : Vector2) bool
+        + CurrentDirection : Vector2
+    }
+
+    class IEventBus {
+        <<interface>>
+        + Subscribe(event, listener)
+        + Publish(event, data)
+        + Unsubscribe(event, listener)
+    }
+
+    class IPathfindingService {
+        <<interface>>
+        + FindPath(nodeA, nodeB) List~Node~
+    }
+
+    class IAudioService {
+        <<interface>>
+        + PlaySFX(string)
+        + PlayMusic(string)
+    }
+
+    class IInputReader {
+        <<interface>>
+        + GetMovementInput() Vector2
+    }
+
+    class ILevelManager {
+        <<interface>>
+        + LoadLevel(int)
+        + GetNode(x, y) Node
+        + IsWalkable(x, y) bool
+    }
+
+    class IScoreManager {
+        <<interface>>
+        + AddPoints(int)
+        + GetScore() int
+        + Reset()
+    }
+
+    %% Managers (MonoBehaviour)
+    class GameManager {
+        <<MonoBehaviour>>
+        - IEventBus eventBus
+        - ILevelManager levelManager
+        - IScoreManager scoreManager
+        - IAudioService audioService
+        + StartGame()
+        + Pause()
+        + GameOver()
+        + SetState(GameState)
+    }
+
+    class LevelManager {
+        <<MonoBehaviour>>
+        + LoadLevel(int)
+        + GetNode(x, y) Node
+        + IsWalkable(x, y) bool
+    }
+
+    class ScoreManager {
+        <<MonoBehaviour>>
+        - int currentScore
+        + AddPoints(int)
+        + GetScore() int
+        + Reset()
+    }
+
+    class EventBus {
+        <<C# Class>>
+        + Subscribe(event, listener)
+        + Publish(event, data)
+        + Unsubscribe(event, listener)
+    }
+
+    %% Entities
+    class PacManController {
+        <<MonoBehaviour>>
+        - IInputReader inputReader
+        - IMovement movement
+        + Position : Vector2
+        + OnCollision(IEntity)
+        + OnDestroy()
+        + Update()
+    }
+
+    class GridMovement {
+        <<C# Class>>
+        - ILevelManager levelManager
+        + Move(direction : Vector2)
+        + CanMoveTo(position : Vector2) bool
+        + CurrentDirection : Vector2
+    }
+
+    class InputReader {
+        <<MonoBehaviour>>
+        + GetMovementInput() Vector2
+    }
+
+    class GhostController {
+        <<MonoBehaviour>>
+        - GhostStateMachine stateMachine
+        - IMovement movement
+        - IPathfindingService pathfinding
+        + Position : Vector2
+        + OnCollision(IEntity)
+        + OnDestroy()
+        + SetStrategy(IGhostStrategy)
+        + Update()
+    }
+
+    class Pellet {
+        <<MonoBehaviour>>
+        # int points
+        - IEventBus eventBus
+        + Position : Vector2
+        + OnCollision(IEntity)
+        + OnEaten()
+    }
+
+    class PowerPellet {
+        <<MonoBehaviour>>
+        - float duration
+        + OnEaten()
+    }
+
+    class GhostStateMachine {
+        <<C# Class>>
+        + ChangeState(GhostState)
+        + Update()
+    }
+
+    class IGhostStrategy {
+        <<interface>>
+        + GetTargetTile() Vector2
+    }
+
+    class ChaseStrategy {
+        <<ScriptableObject>>
+        + GetTargetTile()
+    }
+
+    class ScatterStrategy {
+        <<ScriptableObject>>
+        + GetTargetTile()
+    }
+
+    class FrightenedStrategy {
+        <<ScriptableObject>>
+        + GetTargetTile()
+    }
+
+    class AudioService {
+        <<MonoBehaviour>>
+        + PlaySFX(string)
+        + PlayMusic(string)
+    }
+
+    class PathfindingService {
+        <<C# Class>>
+        - ILevelManager levelManager
+        + FindPath(nodeA, nodeB) List~Node~
+    }
+
+%% Interface Implementations
+IEventBus <|.. EventBus
+ILevelManager <|.. LevelManager
+IScoreManager <|.. ScoreManager
+IAudioService <|.. AudioService
+IPathfindingService <|.. PathfindingService
+IInputReader <|.. InputReader
+IMovement <|.. GridMovement
+
+%% Entity Implementations
+IEntity <|.. PacManController
+IEntity <|.. GhostController
+IEntity <|.. Pellet
+
+%% Inheritance
+Pellet <|-- PowerPellet
+
+%% Manager Dependencies (using interfaces)
+GameManager --> IEventBus
+GameManager --> ILevelManager
+GameManager --> IScoreManager
+GameManager --> IAudioService
+
+%% Entity Dependencies
+PacManController --> IEventBus
+PacManController --> IMovement
+PacManController --> IInputReader
+
+GhostController --> IEventBus
+GhostController --> IMovement
+GhostController --> IPathfindingService
+GhostController --> GhostStateMachine
+
+GridMovement --> ILevelManager
+
+Pellet --> IEventBus
+
+%% Ghost AI
+GhostStateMachine --> IGhostStrategy
+IGhostStrategy <|.. ChaseStrategy
+IGhostStrategy <|.. ScatterStrategy
+IGhostStrategy <|.. FrightenedStrategy
+
+PathfindingService --> ILevelManager

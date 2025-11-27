@@ -1,0 +1,34 @@
+flowchart TD
+
+A[Game Start] --> B[Load Level Grid]
+B --> C[Spawn Pac-Man]
+C --> D[Spawn Ghosts]
+D --> E[Enter GameState: Playing]
+
+E --> F{Pac-Man Dead?}
+F -- Yes --> G[Decrease Lives]
+G --> H{Lives > 0?}
+H -- Yes --> C[Respawn Pac-Man + Ghosts]
+H -- No --> Z[Game Over]
+
+F -- No --> I{All Pellets Eaten?}
+I -- Yes --> J[Load Next Level]
+J --> B
+
+I -- No --> K[Gameplay Loop]
+
+K --> L[Pac-Man Moves]
+L --> M[Pac-Man Collides with Pellet?]
+M -- Yes --> N[Emit: PelletEaten Event]
+
+K --> O[Pac-Man Collides with Power Pellet?]
+O -- Yes --> P[Emit: PowerPellet Eaten]
+P --> Q[Ghosts Switch to Frightened Mode]
+
+K --> R[Ghost AI Update]
+R --> S[Ghost Collides with Pac-Man?]
+
+S -- Yes AND Ghost is Frightened --> T[Emit GhostEaten Event]
+S -- Yes AND Ghost is Normal --> F
+
+S -- No --> E

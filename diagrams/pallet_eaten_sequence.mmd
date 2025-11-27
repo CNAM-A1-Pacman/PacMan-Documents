@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant P as PacMan
+    participant Pel as Pellet
+    participant EB as EventBus
+    participant SM as ScoreManager
+    participant GM as GameManager
+    participant G as Ghost
+
+    Note over P,G: Power Pellet Eaten Sequence
+
+    P->>Pel: OnCollision(IEntity)
+    Pel->>EB: Publish(PowerPelletEaten, data)
+    EB->>SM: Notify(PowerPelletEaten)
+    SM->>SM: AddPoints(50)
+    EB->>GM: Notify(PowerPelletEaten)
+    GM->>G: SetState(Frightened)
+    G->>G: Switch strategy to FrightenedStrategy
+    Pel->>Pel: OnDestroy()
