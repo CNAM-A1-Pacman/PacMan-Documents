@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> Spawning
+
+    Spawning --> Normal : Spawn Complete
+
+    Normal --> Moving : Has Input Direction
+    Moving --> Normal : No Valid Movement
+
+    Moving --> Eating : Collision with Pellet
+    Eating --> Moving : Pellet Consumed
+
+    Moving --> PoweredUp : Collision with Power Pellet
+    PoweredUp --> Moving : Power Duration Ends
+
+    PoweredUp --> Eating : Collision with Pellet
+    Eating --> PoweredUp : Still Powered
+
+    PoweredUp --> ChaseGhost : Collision with Frightened Ghost
+    ChaseGhost --> PoweredUp : Ghost Eaten
+
+    Moving --> Dying : Collision with Normal Ghost
+    PoweredUp --> Dying : Collision with Normal Ghost
+    Normal --> Dying : Collision with Normal Ghost
+
+    Dying --> Dead : Death Animation Complete
+    Dead --> Spawning : Respawn (Lives > 0)
+    Dead --> [*] : Game Over (Lives = 0)

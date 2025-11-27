@@ -1,0 +1,44 @@
+graph TB
+    subgraph "Pac-Man Game System"
+        UC1[Start Game]
+        UC2[Control Pac-Man Movement]
+        UC3[Pause Game]
+        UC4[Resume Game]
+        UC5[Restart Game]
+        UC6[Quit Game]
+        UC7[View Score]
+        UC8[Eat Pellets]
+        UC9[Eat Power Pellets]
+        UC10[Eat Frightened Ghosts]
+        UC11[Advance to Next Level]
+        UC12[View Lives]
+        UC13[Navigate Pause Menu]
+        UC14[View Game Over Screen]
+    end
+
+    Player((Player))
+
+    Player --> UC1
+    Player --> UC2
+    Player --> UC3
+    Player --> UC7
+    Player --> UC12
+
+    UC2 --> UC8
+    UC2 --> UC9
+    UC2 --> UC10
+
+    UC3 --> UC13
+    UC13 --> UC4
+    UC13 --> UC5
+    UC13 --> UC6
+
+    UC8 -.includes.-> UC7
+    UC9 -.includes.-> UC7
+    UC10 -.includes.-> UC7
+
+    UC8 -.extends.-> UC11
+
+    UC2 -.can lead to.-> UC14
+    UC14 --> UC5
+    UC14 --> UC6

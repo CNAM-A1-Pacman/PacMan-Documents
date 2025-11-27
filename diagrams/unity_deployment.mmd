@@ -1,0 +1,75 @@
+graph TB
+    subgraph "Unity Project Structure"
+        subgraph "Scenes"
+            MainMenu[MainMenuScene]
+            GameScene[GameScene]
+        end
+
+        subgraph "GameScene Hierarchy"
+            GameMgr[GameObject: GameManager<br/>- GameManager.cs]
+            LevelMgr[GameObject: LevelManager<br/>- LevelManager.cs]
+            ScoreMgr[GameObject: ScoreManager<br/>- ScoreManager.cs]
+            AudioMgr[GameObject: AudioService<br/>- AudioService.cs]
+            EventSys[GameObject: EventBus<br/>- EventBus.cs]
+
+            InputSys[GameObject: InputSystem<br/>- InputReader.cs]
+
+            Canvas[Canvas: UI]
+            GameUI[GameObject: GameUI<br/>- UIManager.cs]
+            PauseUI[GameObject: PauseMenu<br/>- PauseMenuUI.cs]
+
+            Grid[Grid: Level]
+            Walls[TileMap: Walls]
+            Pellets[GameObject: PelletContainer]
+
+            PacManObj[GameObject: PacMan<br/>- PacManController.cs]
+            GhostContainer[GameObject: Ghosts]
+            Ghost1[GameObject: Blinky<br/>- GhostController.cs]
+            Ghost2[GameObject: Pinky<br/>- GhostController.cs]
+            Ghost3[GameObject: Inky<br/>- GhostController.cs]
+            Ghost4[GameObject: Clyde<br/>- GhostController.cs]
+        end
+
+        subgraph "ScriptableObjects"
+            ChaseData[ChaseStrategy.asset]
+            ScatterData[ScatterStrategy.asset]
+            FrightenedData[FrightenedStrategy.asset]
+            LevelData[LevelData.asset]
+            AudioData[AudioClips.asset]
+        end
+
+        subgraph "Scripts"
+            Interfaces[Interfaces/<br/>IEntity, IMovement, etc.]
+            Entities[Entities/<br/>Controllers]
+            Managers[Managers/<br/>Game, Level, Score]
+            AI[AI/<br/>Strategies, StateMachine]
+            Services[Services/<br/>Pathfinding, Audio]
+            Movement[Movement/<br/>GridMovement]
+        end
+    end
+
+    GameScene --> GameMgr
+    GameScene --> LevelMgr
+    GameScene --> ScoreMgr
+    GameScene --> AudioMgr
+    GameScene --> EventSys
+    GameScene --> InputSys
+    GameScene --> Canvas
+
+    Canvas --> GameUI
+    Canvas --> PauseUI
+
+    GameScene --> Grid
+    Grid --> Walls
+    Grid --> Pellets
+
+    GameScene --> PacManObj
+    GameScene --> GhostContainer
+    GhostContainer --> Ghost1
+    GhostContainer --> Ghost2
+    GhostContainer --> Ghost3
+    GhostContainer --> Ghost4
+
+    Ghost1 -.uses.-> ChaseData
+    Ghost1 -.uses.-> ScatterData
+    Ghost1 -.uses.-> FrightenedData

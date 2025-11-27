@@ -5,30 +5,47 @@ B --> C[Spawn Pac-Man]
 C --> D[Spawn Ghosts]
 D --> E[Enter GameState: Playing]
 
-E --> F{Pac-Man Dead?}
-F -- Yes --> G[Decrease Lives]
-G --> H{Lives > 0?}
-H -- Yes --> C[Respawn Pac-Man + Ghosts]
-H -- No --> Z[Game Over]
+E --> GAMELOOP[Game Loop]
 
-F -- No --> I{All Pellets Eaten?}
-I -- Yes --> J[Load Next Level]
-J --> B
+GAMELOOP --> PAUSE{Pause Input?}
+PAUSE -- Yes --> PAUSED[GameState: Paused]
+PAUSED --> MENU{User Choice}
+MENU -- Resume --> GAMELOOP
+MENU -- Restart --> A
+MENU -- Quit --> EXIT[Exit Game]
 
-I -- No --> K[Gameplay Loop]
+PAUSE -- No --> VICTORY{All Pellets Eaten?}
+VICTORY -- Yes --> NEXTLVL[Load Next Level]
+NEXTLVL --> B
 
-K --> L[Pac-Man Moves]
-L --> M[Pac-Man Collides with Pellet?]
-M -- Yes --> N[Emit: PelletEaten Event]
+VICTORY -- No --> UPDATE[Update Entities]
+UPDATE --> PACMOVE[Pac-Man Moves]
+PACMOVE --> GHOSTMOVE[Ghosts Move via AI]
+GHOSTMOVE --> COLLISIONS[Check Collisions]
 
-K --> O[Pac-Man Collides with Power Pellet?]
-O -- Yes --> P[Emit: PowerPellet Eaten]
-P --> Q[Ghosts Switch to Frightened Mode]
+COLLISIONS --> PACCOL{Pac-Man Collision?}
 
-K --> R[Ghost AI Update]
-R --> S[Ghost Collides with Pac-Man?]
+PACCOL -- Pellet --> PELTYPE{Pellet Type?}
+PELTYPE -- Normal Pellet --> ADDPTS[Add Points]
+ADDPTS --> DESTROY1[Destroy Pellet]
+DESTROY1 --> GAMELOOP
 
-S -- Yes AND Ghost is Frightened --> T[Emit GhostEaten Event]
-S -- Yes AND Ghost is Normal --> F
+PELTYPE -- Power Pellet --> BIGPTS[Add Bonus Points]
+BIGPTS --> FRIGHTEN[Ghosts Enter Frightened Mode]
+FRIGHTEN --> DESTROY2[Destroy Power Pellet]
+DESTROY2 --> GAMELOOP
 
-S -- No --> E
+PACCOL -- Ghost --> GHOSTSTATE{Ghost State?}
+GHOSTSTATE -- Frightened --> EATGHOST[Eat Ghost]
+EATGHOST --> GHOSTPTS[Add Ghost Points]
+GHOSTPTS --> RESPAWNGHOST[Ghost Returns to House]
+RESPAWNGHOST --> GAMELOOP
+
+GHOSTSTATE -- Normal/Chase/Scatter --> PACDIE[Pac-Man Dies]
+PACDIE --> DECLIVES[Decrease Lives]
+DECLIVES --> CHECKLIVES{Lives > 0?}
+CHECKLIVES -- Yes --> RESPAWN[Respawn Pac-Man & Reset Ghosts]
+RESPAWN --> GAMELOOP
+CHECKLIVES -- No --> GAMEOVER[Game Over]
+
+PACCOL -- No Collision --> GAMELOOP

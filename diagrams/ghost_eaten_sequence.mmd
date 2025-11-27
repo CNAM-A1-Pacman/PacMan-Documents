@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant P as PacMan
+    participant G as Ghost (Frightened)
+    participant EB as EventBus
+    participant SM as ScoreManager
+    participant GM as GameManager
+
+    Note over P,G: Ghost in Frightened State
+
+    P->>G: OnCollision(IEntity)
+    G->>G: CheckState() - Is Frightened
+    G->>EB: Publish(GhostEaten, ghostData)
+    EB->>SM: Notify(GhostEaten)
+    SM->>SM: AddPoints(200/400/800/1600)
+    EB->>GM: Notify(GhostEaten)
+    GM->>G: ReturnToGhostHouse()
+    G->>G: SetState(Eaten)
+    G->>G: Navigate to Ghost House
+    G->>G: SetState(Scatter)

@@ -1,0 +1,71 @@
+erDiagram
+    GAMEMANAGER ||--|| GAMESTATE : "has current"
+    GAMEMANAGER ||--o{ LEVEL : "manages"
+    GAMEMANAGER ||--|| SCOREMANAGER : "uses"
+    GAMEMANAGER ||--|| EVENTBUS : "uses"
+
+    LEVEL ||--|{ NODE : "contains"
+    LEVEL ||--|{ PELLET : "contains"
+    LEVEL ||--o{ POWERPELLET : "contains"
+    LEVEL ||--|| PACMAN : "contains"
+    LEVEL ||--o{ GHOST : "contains"
+
+    NODE {
+        int x
+        int y
+        bool isWalkable
+        NodeType type
+    }
+
+    PELLET {
+        Vector2 position
+        int points
+        bool isEaten
+    }
+
+    POWERPELLET {
+        Vector2 position
+        int points
+        float duration
+        bool isEaten
+    }
+
+    PACMAN ||--|| GRIDMOVEMENT : "uses"
+    PACMAN ||--|| INPUTREADER : "uses"
+    PACMAN {
+        Vector2 position
+        Vector2 direction
+        int lives
+        bool isAlive
+    }
+
+    GHOST ||--|| GRIDMOVEMENT : "uses"
+    GHOST ||--|| GHOSTAI : "uses"
+    GHOST ||--|| GHOSTSTATE : "has"
+    GHOST {
+        Vector2 position
+        Vector2 direction
+        GhostType type
+        Vector2 homeCorner
+    }
+
+    GHOSTSTATE {
+        string stateName
+        float stateTimer
+    }
+
+    GHOSTAI ||--|| GHOSTSTRATEGY : "uses"
+    GHOSTAI ||--|| PATHFINDINGSERVICE : "uses"
+
+    SCOREMANAGER {
+        int currentScore
+        int highScore
+        int pelletsRemaining
+    }
+
+    GAMESTATE {
+        string state
+    }
+
+    PELLET }o--|| NODE : "occupies"
+    POWERPELLET }o--|| NODE : "occupies"

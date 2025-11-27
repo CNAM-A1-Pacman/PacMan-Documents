@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant UI as MainMenuUI
+    participant GM as GameManager
+    participant LM as LevelManager
+    participant EB as EventBus
+    participant SM as ScoreManager
+    participant Pac as PacManController
+    participant Ghosts as GhostControllers
+
+    UI->>GM: StartGame()
+    GM->>SM: Reset()
+    GM->>LM: LoadLevel(1)
+    LM->>LM: Parse level data
+    LM->>LM: Create grid nodes
+    LM->>LM: Instantiate pellets
+    LM->>EB: Publish(LevelLoaded)
+
+    GM->>Pac: Spawn at start position
+    Pac->>Pac: Initialize(InputReader, GridMovement)
+
+    GM->>Ghosts: Spawn all ghosts
+    loop For each ghost
+        Ghosts->>Ghosts: Initialize(GhostAI, GridMovement)
+        Ghosts->>Ghosts: SetState(Scatter)
+    end
+
+    GM->>GM: SetState(Playing)
+    GM->>EB: Publish(GameStarted)
+    EB->>UI: Notify(GameStarted)
+    UI->>UI: Hide main menu
+    UI->>UI: Show game UI

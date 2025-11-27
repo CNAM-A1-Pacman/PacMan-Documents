@@ -64,8 +64,12 @@ classDiagram
         - ILevelManager levelManager
         - IScoreManager scoreManager
         - IAudioService audioService
+        - GameState currentState
         + StartGame()
-        + Pause()
+        + PauseGame()
+        + ResumeGame()
+        + RestartGame()
+        + QuitGame()
         + GameOver()
         + SetState(GameState)
     }

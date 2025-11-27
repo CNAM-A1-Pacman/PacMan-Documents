@@ -6,6 +6,7 @@ subgraph Core Systems
     LM[LevelManager : ILevelManager]
     EM[EventBus : IEventBus]
     UI[UIManager]
+    PM[PauseMenuUI]
 end
 
 subgraph Input
@@ -48,6 +49,8 @@ GM -- uses IScoreManager --> SM
 GM -- uses IAudioService --> AUD
 SM -- uses IEventBus --> EM
 UI -- uses IEventBus --> EM
+PM -- listens to --> GM
+PM -- sends commands to --> GM
 
 %% Entity dependencies
 Pac -- uses IInputReader --> IR
