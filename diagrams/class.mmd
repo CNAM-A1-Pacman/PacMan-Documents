@@ -10,11 +10,9 @@ classDiagram
 
     class IMovement {
         <<interface>>
-        + Move(direction : Vector2)
+        + Move(direction : Vector2, speed : float)
         + CanMoveTo(position : Vector2) bool
         + CurrentDirection : Vector2
-        + SetSpeed(float)
-        + Speed : float
     }
 
     class IEventBus {
@@ -109,23 +107,21 @@ classDiagram
         <<MonoBehaviour>>
         - IDirectionProvider directionProvider
         - IMovement movement
+        - float baseSpeed
+        - float currentSpeed
         + Position : Vector2
         + OnCollision(IEntity)
         + OnDestroy()
         + Update()
+        + SetSpeed(float)
     }
 
     class GridMovement {
         <<C# Class>>
         - ILevelManager levelManager
-        - float baseSpeed
-        - float currentSpeed
-        + Move(direction : Vector2)
+        + Move(direction : Vector2, speed : float)
         + CanMoveTo(position : Vector2) bool
         + CurrentDirection : Vector2
-        + SetSpeed(float)
-        + Speed : float
-        + UpdateSpeedFromLevel()
     }
 
     class InputReader {
@@ -140,11 +136,14 @@ classDiagram
         - IDirectionProvider directionProvider
         - IMovement movement
         - IPathfindingService pathfinding
+        - float baseSpeed
+        - float currentSpeed
         + Position : Vector2
         + OnCollision(IEntity)
         + OnDestroy()
         + SetStrategy(IGhostStrategy)
         + Update()
+        + SetSpeed(float)
     }
 
     class GhostAI {

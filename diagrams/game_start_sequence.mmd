@@ -18,12 +18,12 @@ sequenceDiagram
 
     GM->>Pac: Spawn at start position
     Pac->>Pac: Initialize(InputReader, GridMovement)
-    LM->>Pac: ApplySpeedMultiplier(config.pacmanSpeedMultiplier)
+    Pac->>Pac: SetSpeed(baseSpeed * config.pacmanSpeedMultiplier)
 
     GM->>Ghosts: Spawn all ghosts
     loop For each ghost
         Ghosts->>Ghosts: Initialize(GhostAI, GridMovement)
-        LM->>Ghosts: ApplySpeedMultiplier(config.ghostSpeedMultiplier)
+        Ghosts->>Ghosts: SetSpeed(baseSpeed * config.ghostSpeedMultiplier)
         Ghosts->>Ghosts: SetState(Scatter)
     end
 
