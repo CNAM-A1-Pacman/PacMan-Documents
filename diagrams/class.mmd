@@ -141,27 +141,25 @@ classDiagram
         + Position : Vector2
         + OnCollision(IEntity)
         + OnDestroy()
-        + SetStrategy(IGhostStrategy)
+        + SetStrategy(IMovementStrategy)
         + Update()
         + SetSpeed(float)
     }
 
     class GhostAI {
         <<C# Class>>
-        - IGhostStrategy strategy
+        - IMovementStrategy strategy
         - IPathfindingService pathfinding
-        - Transform target
         + GetNextDirection() Vector2
-        + SetStrategy(IGhostStrategy)
+        + SetStrategy(IMovementStrategy)
     }
 
     class PacManAI {
         <<C# Class>>
+        - IMovementStrategy strategy
         - IPathfindingService pathfinding
-        - ILevelManager levelManager
         + GetNextDirection() Vector2
-        + FindNearestPellet() Vector2
-        + AvoidGhosts() bool
+        + SetStrategy(IMovementStrategy)
     }
 
     class Pellet {
@@ -185,24 +183,44 @@ classDiagram
         + Update()
     }
 
-    class IGhostStrategy {
+    class IMovementStrategy {
         <<interface>>
-        + GetTargetTile() Vector2
+        + GetTargetTile(Transform entity) Vector2
+        + CalculateDirection(Transform entity) Vector2
     }
 
     class ChaseStrategy {
         <<ScriptableObject>>
-        + GetTargetTile()
+        + GetTargetTile(Transform entity) Vector2
+        + CalculateDirection(Transform entity) Vector2
     }
 
     class ScatterStrategy {
         <<ScriptableObject>>
-        + GetTargetTile()
+        + GetTargetTile(Transform entity) Vector2
+        + CalculateDirection(Transform entity) Vector2
     }
 
     class FrightenedStrategy {
         <<ScriptableObject>>
-        + GetTargetTile()
+        + GetTargetTile(Transform entity) Vector2
+        + CalculateDirection(Transform entity) Vector2
+    }
+
+    class PelletSeekStrategy {
+        <<ScriptableObject>>
+        - ILevelManager levelManager
+        + GetTargetTile(Transform entity) Vector2
+        + CalculateDirection(Transform entity) Vector2
+        + FindNearestPellet() Vector2
+    }
+
+    class GhostAvoidanceStrategy {
+        <<ScriptableObject>>
+        - float safeDistance
+        + GetTargetTile(Transform entity) Vector2
+        + CalculateDirection(Transform entity) Vector2
+        + IsGhostNearby() bool
     }
 
     class AudioService {
@@ -271,13 +289,16 @@ Pellet --> IEventBus
 
 %% Ghost AI
 GhostController --> GhostStateMachine
-GhostAI --> IGhostStrategy
+GhostAI --> IMovementStrategy
 GhostAI --> IPathfindingService
+PacManAI --> IMovementStrategy
 PacManAI --> IPathfindingService
-PacManAI --> ILevelManager
-GhostStateMachine --> IGhostStrategy
-IGhostStrategy <|.. ChaseStrategy
-IGhostStrategy <|.. ScatterStrategy
-IGhostStrategy <|.. FrightenedStrategy
+GhostStateMachine --> IMovementStrategy
+IMovementStrategy <|.. ChaseStrategy
+IMovementStrategy <|.. ScatterStrategy
+IMovementStrategy <|.. FrightenedStrategy
+IMovementStrategy <|.. PelletSeekStrategy
+IMovementStrategy <|.. GhostAvoidanceStrategy
+PelletSeekStrategy --> ILevelManager
 
 PathfindingService --> ILevelManager
