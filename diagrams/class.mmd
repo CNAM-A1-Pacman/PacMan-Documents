@@ -155,6 +155,15 @@ classDiagram
         + SetStrategy(IGhostStrategy)
     }
 
+    class PacManAI {
+        <<C# Class>>
+        - IPathfindingService pathfinding
+        - ILevelManager levelManager
+        + GetNextDirection() Vector2
+        + FindNearestPellet() Vector2
+        + AvoidGhosts() bool
+    }
+
     class Pellet {
         <<MonoBehaviour>>
         # int points
@@ -227,6 +236,7 @@ IPathfindingService <|.. PathfindingService
 IInputReader <|.. InputReader
 IDirectionProvider <|.. InputReader
 IDirectionProvider <|.. GhostAI
+IDirectionProvider <|.. PacManAI
 IMovement <|.. GridMovement
 
 %% Entity Implementations
@@ -263,6 +273,8 @@ Pellet --> IEventBus
 GhostController --> GhostStateMachine
 GhostAI --> IGhostStrategy
 GhostAI --> IPathfindingService
+PacManAI --> IPathfindingService
+PacManAI --> ILevelManager
 GhostStateMachine --> IGhostStrategy
 IGhostStrategy <|.. ChaseStrategy
 IGhostStrategy <|.. ScatterStrategy
