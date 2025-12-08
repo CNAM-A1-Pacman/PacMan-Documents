@@ -17,14 +17,14 @@ sequenceDiagram
     LM->>EB: Publish(LevelLoaded)
 
     GM->>Pac: Spawn at start position
-    Pac->>Pac: Initialize(InputReader, GridMovement)
+    Pac->>Pac: Initialize(InputReader, PhysicsMovement)
     Pac->>Pac: SetSpeed(baseSpeed * config.pacmanSpeedMultiplier)
 
     GM->>Ghosts: Spawn all ghosts
     loop For each ghost
-        Ghosts->>Ghosts: Initialize(GhostAI, GridMovement)
+        Ghosts->>Ghosts: Initialize(GhostAI, PhysicsMovement)
         Ghosts->>Ghosts: SetSpeed(baseSpeed * config.ghostSpeedMultiplier)
-        Ghosts->>Ghosts: SetState(Scatter)
+        Ghosts->>Ghosts: ChangeState(Scatter)
     end
 
     GM->>GM: SetState(Playing)

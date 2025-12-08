@@ -1,17 +1,10 @@
 flowchart TD
 
 A[Pac-Man Update] --> B[Get Input from IDirectionProvider]
-B --> C[InputReader.GetNextDirection]
-C --> D[GridMovement.CanMoveTo?]
+B --> C[directionProvider.GetNextDirection]
+C --> D[PhysicsMovement.Move with CurrentSpeed]
 
-D -- No --> E[Try Continue Current Direction]
-E --> F{Can Continue?}
-F -- No --> A
-F -- Yes --> G[GridMovement.Move with currentSpeed]
-
-D -- Yes --> G[GridMovement.Move with currentSpeed]
-
-G --> H[Update Position]
+D --> H[Rigidbody2D Updates Position]
 H --> I{Collision Detection}
 
 I -- Pellet --> J{Pellet Type?}

@@ -16,20 +16,25 @@ end
 subgraph Entities
     Pac[PacManController : IEntity]
     Ghost[GhostController : IEntity]
-    Pellet[Pellet : IEntity]
+    Pellet[Pellet]
     PowerPellet[PowerPellet extends Pellet]
+    Wall[Wall]
 end
 
 subgraph Movement
-    GridMov[GridMovement : IMovement]
+    PhysMov[PhysicsMovement : IMovement]
 end
 
 subgraph AI
-    GS[GhostStateMachine]
-    Strat[IGhostStrategy]
+    GhostAI[GhostAI : IDirectionProvider]
+    PacManAI[PacManAI : IDirectionProvider]
+    IGhostStrat[IGhostMovementStrategy]
+    IPacStrat[IPacManMovementStrategy]
     CHS[ChaseStrategy]
     SCS[ScatterStrategy]
     FRS[FrightenedStrategy]
+    PSS[PelletSeekStrategy]
+    GAS[GhostAvoidanceStrategy]
 end
 
 subgraph Services
@@ -53,19 +58,19 @@ PM -- listens to --> GM
 PM -- sends commands to --> GM
 
 %% Entity dependencies
-Pac -- uses IInputReader --> IR
-Pac -- uses IMovement --> GridMov
-Ghost -- uses IMovement --> GridMov
-Ghost --> GS
-
-%% Movement dependencies
-GridMov -- uses ILevelManager --> LM
+Pac -- uses IDirectionProvider --> IR
+Pac -- uses IMovement --> PhysMov
+Ghost -- uses IDirectionProvider --> GhostAI
+Ghost -- uses IMovement --> PhysMov
 
 %% AI
-GS --> Strat
-Strat -.implements.-> CHS
-Strat -.implements.-> SCS
-Strat -.implements.-> FRS
+GhostAI --> IGhostStrat
+PacManAI --> IPacStrat
+IGhostStrat -.implements.-> CHS
+IGhostStrat -.implements.-> SCS
+IGhostStrat -.implements.-> FRS
+IPacStrat -.implements.-> PSS
+IPacStrat -.implements.-> GAS
 
 %% Service dependencies
 Ghost -- uses IPathfindingService --> PF
