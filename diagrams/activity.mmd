@@ -1,7 +1,9 @@
 flowchart TD
 
 A[Game Start] --> B[Load Level Grid]
-B --> C[Spawn Pac-Man]
+B --> LOADCONFIG[Load Level Config]
+LOADCONFIG --> APPLYSPEED[Apply Speed Multipliers]
+APPLYSPEED --> C[Spawn Pac-Man]
 C --> D[Spawn Ghosts]
 D --> E[Enter GameState: Playing]
 

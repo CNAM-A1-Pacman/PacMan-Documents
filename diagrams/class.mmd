@@ -13,6 +13,8 @@ classDiagram
         + Move(direction : Vector2)
         + CanMoveTo(position : Vector2) bool
         + CurrentDirection : Vector2
+        + SetSpeed(float)
+        + Speed : float
     }
 
     class IEventBus {
@@ -48,6 +50,8 @@ classDiagram
         + LoadLevel(int)
         + GetNode(x, y) Node
         + IsWalkable(x, y) bool
+        + GetCurrentLevel() int
+        + GetLevelConfig() LevelConfig
     }
 
     class IScoreManager {
@@ -76,9 +80,13 @@ classDiagram
 
     class LevelManager {
         <<MonoBehaviour>>
+        - int currentLevel
+        - LevelConfig currentConfig
         + LoadLevel(int)
         + GetNode(x, y) Node
         + IsWalkable(x, y) bool
+        + GetCurrentLevel() int
+        + GetLevelConfig() LevelConfig
     }
 
     class ScoreManager {
@@ -110,9 +118,14 @@ classDiagram
     class GridMovement {
         <<C# Class>>
         - ILevelManager levelManager
+        - float baseSpeed
+        - float currentSpeed
         + Move(direction : Vector2)
         + CanMoveTo(position : Vector2) bool
         + CurrentDirection : Vector2
+        + SetSpeed(float)
+        + Speed : float
+        + UpdateSpeedFromLevel()
     }
 
     class InputReader {
@@ -196,6 +209,16 @@ classDiagram
         + FindPath(nodeA, nodeB) List~Node~
     }
 
+    class LevelConfig {
+        <<ScriptableObject>>
+        + levelNumber : int
+        + pacmanSpeedMultiplier : float
+        + ghostSpeedMultiplier : float
+        + frightenedDuration : float
+        + scatterDuration : float
+        + chaseDuration : float
+    }
+
 %% Interface Implementations
 IEventBus <|.. EventBus
 ILevelManager <|.. LevelManager
@@ -220,6 +243,9 @@ GameManager --> IEventBus
 GameManager --> ILevelManager
 GameManager --> IScoreManager
 GameManager --> IAudioService
+
+%% LevelManager Dependencies
+LevelManager --> LevelConfig
 
 %% Entity Dependencies
 PacManController --> IEventBus

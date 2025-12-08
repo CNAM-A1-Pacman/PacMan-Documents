@@ -11,16 +11,19 @@ sequenceDiagram
     GM->>SM: Reset()
     GM->>LM: LoadLevel(1)
     LM->>LM: Parse level data
+    LM->>LM: Load LevelConfig for level 1
     LM->>LM: Create grid nodes
     LM->>LM: Instantiate pellets
     LM->>EB: Publish(LevelLoaded)
 
     GM->>Pac: Spawn at start position
     Pac->>Pac: Initialize(InputReader, GridMovement)
+    LM->>Pac: ApplySpeedMultiplier(config.pacmanSpeedMultiplier)
 
     GM->>Ghosts: Spawn all ghosts
     loop For each ghost
         Ghosts->>Ghosts: Initialize(GhostAI, GridMovement)
+        LM->>Ghosts: ApplySpeedMultiplier(config.ghostSpeedMultiplier)
         Ghosts->>Ghosts: SetState(Scatter)
     end
 
