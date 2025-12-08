@@ -4,15 +4,21 @@ classDiagram
     class IEntity {
         <<interface>>
         + Position : Vector2
+        + Velocity : Vector2
+        + Speed : float
+        + IsActive : bool
         + OnCollision(IEntity)
+        + OnTriggerEnter(Collider2D)
         + OnDestroy()
+        + Update()
     }
 
     class IMovement {
         <<interface>>
-        + Move(direction : Vector2, speed : float)
-        + CanMoveTo(position : Vector2) bool
+        + Move(direction : Vector2, speed : float, deltaTime : float)
+        + Stop()
         + CurrentDirection : Vector2
+        + CurrentVelocity : Vector2
     }
 
     class IEventBus {
@@ -107,21 +113,28 @@ classDiagram
         <<MonoBehaviour>>
         - IDirectionProvider directionProvider
         - IMovement movement
+        - Rigidbody2D rb
+        - Collider2D collider
         - float baseSpeed
         - float currentSpeed
         + Position : Vector2
+        + Velocity : Vector2
+        + Speed : float
+        + IsActive : bool
         + OnCollision(IEntity)
+        + OnTriggerEnter(Collider2D)
         + OnDestroy()
         + Update()
         + SetSpeed(float)
     }
 
-    class GridMovement {
+    class PhysicsMovement {
         <<C# Class>>
-        - ILevelManager levelManager
-        + Move(direction : Vector2, speed : float)
-        + CanMoveTo(position : Vector2) bool
+        - Rigidbody2D rigidbody
+        + Move(direction : Vector2, speed : float, deltaTime : float)
+        + Stop()
         + CurrentDirection : Vector2
+        + CurrentVelocity : Vector2
     }
 
     class InputReader {
@@ -136,45 +149,55 @@ classDiagram
         - IDirectionProvider directionProvider
         - IMovement movement
         - IPathfindingService pathfinding
+        - Rigidbody2D rb
+        - Collider2D collider
         - float baseSpeed
         - float currentSpeed
         + Position : Vector2
+        + Velocity : Vector2
+        + Speed : float
+        + IsActive : bool
         + OnCollision(IEntity)
+        + OnTriggerEnter(Collider2D)
         + OnDestroy()
-        + SetStrategy(IMovementStrategy)
+        + SetStrategy(IGhostMovementStrategy)
         + Update()
         + SetSpeed(float)
     }
 
     class GhostAI {
         <<C# Class>>
-        - IMovementStrategy strategy
+        - IGhostMovementStrategy strategy
         - IPathfindingService pathfinding
+        - PacManController target
         + GetNextDirection() Vector2
-        + SetStrategy(IMovementStrategy)
+        + SetStrategy(IGhostMovementStrategy)
     }
 
     class PacManAI {
         <<C# Class>>
-        - IMovementStrategy strategy
+        - IPacManMovementStrategy strategy
         - IPathfindingService pathfinding
+        - List~GhostController~ ghosts
         + GetNextDirection() Vector2
-        + SetStrategy(IMovementStrategy)
+        + SetStrategy(IPacManMovementStrategy)
     }
 
     class Pellet {
         <<MonoBehaviour>>
         # int points
         - IEventBus eventBus
+        - Collider2D collider
         + Position : Vector2
-        + OnCollision(IEntity)
-        + OnEaten()
+        + IsCollected : bool
+        + OnTriggerEnter(Collider2D)
+        + Collect()
     }
 
     class PowerPellet {
         <<MonoBehaviour>>
         - float duration
-        + OnEaten()
+        + Collect()
     }
 
     class GhostStateMachine {
@@ -183,44 +206,51 @@ classDiagram
         + Update()
     }
 
-    class IMovementStrategy {
+    class IGhostMovementStrategy {
         <<interface>>
-        + GetTargetTile(Transform entity) Vector2
-        + CalculateDirection(Transform entity) Vector2
+        + GetTargetTile(GhostController ghost, PacManController target) Vector2
+        + CalculateDirection(GhostController ghost) Vector2
+    }
+
+    class IPacManMovementStrategy {
+        <<interface>>
+        + GetTargetTile(PacManController pacman, List~GhostController~ ghosts) Vector2
+        + CalculateDirection(PacManController pacman) Vector2
     }
 
     class ChaseStrategy {
         <<ScriptableObject>>
-        + GetTargetTile(Transform entity) Vector2
-        + CalculateDirection(Transform entity) Vector2
+        + GetTargetTile(GhostController ghost, PacManController target) Vector2
+        + CalculateDirection(GhostController ghost) Vector2
     }
 
     class ScatterStrategy {
         <<ScriptableObject>>
-        + GetTargetTile(Transform entity) Vector2
-        + CalculateDirection(Transform entity) Vector2
+        - Vector2 homeCorner
+        + GetTargetTile(GhostController ghost, PacManController target) Vector2
+        + CalculateDirection(GhostController ghost) Vector2
     }
 
     class FrightenedStrategy {
         <<ScriptableObject>>
-        + GetTargetTile(Transform entity) Vector2
-        + CalculateDirection(Transform entity) Vector2
+        + GetTargetTile(GhostController ghost, PacManController target) Vector2
+        + CalculateDirection(GhostController ghost) Vector2
     }
 
     class PelletSeekStrategy {
         <<ScriptableObject>>
         - ILevelManager levelManager
-        + GetTargetTile(Transform entity) Vector2
-        + CalculateDirection(Transform entity) Vector2
-        + FindNearestPellet() Vector2
+        + GetTargetTile(PacManController pacman, List~GhostController~ ghosts) Vector2
+        + CalculateDirection(PacManController pacman) Vector2
+        + FindNearestPellet(Vector2 position) Vector2
     }
 
     class GhostAvoidanceStrategy {
         <<ScriptableObject>>
         - float safeDistance
-        + GetTargetTile(Transform entity) Vector2
-        + CalculateDirection(Transform entity) Vector2
-        + IsGhostNearby() bool
+        + GetTargetTile(PacManController pacman, List~GhostController~ ghosts) Vector2
+        + CalculateDirection(PacManController pacman) Vector2
+        + FindSafestDirection(Vector2 position, List~GhostController~ ghosts) Vector2
     }
 
     class AudioService {
@@ -255,50 +285,48 @@ IInputReader <|.. InputReader
 IDirectionProvider <|.. InputReader
 IDirectionProvider <|.. GhostAI
 IDirectionProvider <|.. PacManAI
-IMovement <|.. GridMovement
+IMovement <|.. PhysicsMovement
 
 %% Entity Implementations
 IEntity <|.. PacManController
 IEntity <|.. GhostController
-IEntity <|.. Pellet
 
 %% Inheritance
 Pellet <|-- PowerPellet
 
-%% Manager Dependencies (using interfaces)
-GameManager --> IEventBus
-GameManager --> ILevelManager
-GameManager --> IScoreManager
-GameManager --> IAudioService
+%% Manager Dependencies (using interfaces with cardinality)
+GameManager "1" --> "1" IEventBus
+GameManager "1" --> "1" ILevelManager
+GameManager "1" --> "1" IScoreManager
+GameManager "1" --> "1" IAudioService
 
 %% LevelManager Dependencies
-LevelManager --> LevelConfig
+LevelManager "1" --> "1" LevelConfig
+LevelManager "1" --> "0..*" Pellet : manages
 
-%% Entity Dependencies
-PacManController --> IEventBus
-PacManController --> IMovement
-PacManController --> IDirectionProvider
+%% Entity Dependencies with cardinality
+PacManController "1" --> "1" IEventBus
+PacManController "1" --> "1" IMovement
+PacManController "1" --> "1" IDirectionProvider
 
-GhostController --> IEventBus
-GhostController --> IMovement
-GhostController --> IDirectionProvider
+GhostController "1" --> "1" IEventBus
+GhostController "1" --> "1" IMovement
+GhostController "1" --> "1" IDirectionProvider
 
-GridMovement --> ILevelManager
+Pellet "0..*" --> "1" IEventBus
 
-Pellet --> IEventBus
+%% AI and State Management with cardinality
+GhostController "1" --> "1" GhostStateMachine
+GhostAI "1" --> "1" IGhostMovementStrategy
+GhostAI "1" --> "1" IPathfindingService
+PacManAI "1" --> "1" IPacManMovementStrategy
+PacManAI "1" --> "1" IPathfindingService
+GhostStateMachine "1" --> "1" IGhostMovementStrategy
+IGhostMovementStrategy <|.. ChaseStrategy
+IGhostMovementStrategy <|.. ScatterStrategy
+IGhostMovementStrategy <|.. FrightenedStrategy
+IPacManMovementStrategy <|.. PelletSeekStrategy
+IPacManMovementStrategy <|.. GhostAvoidanceStrategy
+PelletSeekStrategy "1" --> "1" ILevelManager
 
-%% Ghost AI
-GhostController --> GhostStateMachine
-GhostAI --> IMovementStrategy
-GhostAI --> IPathfindingService
-PacManAI --> IMovementStrategy
-PacManAI --> IPathfindingService
-GhostStateMachine --> IMovementStrategy
-IMovementStrategy <|.. ChaseStrategy
-IMovementStrategy <|.. ScatterStrategy
-IMovementStrategy <|.. FrightenedStrategy
-IMovementStrategy <|.. PelletSeekStrategy
-IMovementStrategy <|.. GhostAvoidanceStrategy
-PelletSeekStrategy --> ILevelManager
-
-PathfindingService --> ILevelManager
+PathfindingService "1" --> "1" ILevelManager
