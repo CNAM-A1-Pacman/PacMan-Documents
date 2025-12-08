@@ -4,13 +4,16 @@ classDiagram
     class IEntity {
         <<interface>>
         + Position : Vector2
-        + Velocity : Vector2
-        + Speed : float
         + IsActive : bool
-        + OnCollision(IEntity)
-        + OnTriggerEnter(Collider2D)
-        + OnDestroy()
+        + Rigidbody2D : Rigidbody2D
+        + Collider : Collider2D
+        + BaseSpeed : float
+        + CurrentSpeed : float
+        + OnTriggerEnter2D(Collider2D)
+        + OnCollisionEnter2D(Collision2D)
         + Update()
+        + OnDestroy()
+        + SetSpeed(float)
     }
 
     class IMovement {
@@ -113,19 +116,10 @@ classDiagram
         <<MonoBehaviour>>
         - IDirectionProvider directionProvider
         - IMovement movement
-        - Rigidbody2D rb
-        - Collider2D collider
-        - float baseSpeed
-        - float currentSpeed
-        + Position : Vector2
-        + Velocity : Vector2
-        + Speed : float
-        + IsActive : bool
-        + OnCollision(IEntity)
-        + OnTriggerEnter(Collider2D)
-        + OnDestroy()
-        + Update()
-        + SetSpeed(float)
+        + HandlePelletCollision(Pellet)
+        + HandlePowerPelletCollision(PowerPellet)
+        + HandleGhostCollision(GhostController)
+        + HandleWallCollision(Wall)
     }
 
     class PhysicsMovement {
@@ -137,6 +131,13 @@ classDiagram
         + CurrentVelocity : Vector2
     }
 
+    class Wall {
+        <<MonoBehaviour>>
+        - Collider2D collider
+        - bool isWalkable
+        + Position : Vector2
+    }
+
     class InputReader {
         <<MonoBehaviour>>
         + GetMovementInput() Vector2
@@ -145,24 +146,13 @@ classDiagram
 
     class GhostController {
         <<MonoBehaviour>>
-        - GhostStateMachine stateMachine
         - IDirectionProvider directionProvider
         - IMovement movement
         - IPathfindingService pathfinding
-        - Rigidbody2D rb
-        - Collider2D collider
-        - float baseSpeed
-        - float currentSpeed
-        + Position : Vector2
-        + Velocity : Vector2
-        + Speed : float
-        + IsActive : bool
-        + OnCollision(IEntity)
-        + OnTriggerEnter(Collider2D)
-        + OnDestroy()
+        - GhostState currentState
+        - float stateTimer
         + SetStrategy(IGhostMovementStrategy)
-        + Update()
-        + SetSpeed(float)
+        + ChangeState(GhostState)
     }
 
     class GhostAI {
@@ -188,8 +178,7 @@ classDiagram
         # int points
         - IEventBus eventBus
         - Collider2D collider
-        + Position : Vector2
-        + IsCollected : bool
+        - bool isCollected
         + OnTriggerEnter(Collider2D)
         + Collect()
     }
@@ -198,12 +187,6 @@ classDiagram
         <<MonoBehaviour>>
         - float duration
         + Collect()
-    }
-
-    class GhostStateMachine {
-        <<C# Class>>
-        + ChangeState(GhostState)
-        + Update()
     }
 
     class IGhostMovementStrategy {
@@ -303,6 +286,7 @@ GameManager "1" --> "1" IAudioService
 %% LevelManager Dependencies
 LevelManager "1" --> "1" LevelConfig
 LevelManager "1" --> "0..*" Pellet : manages
+LevelManager "1" --> "0..*" Wall : manages
 
 %% Entity Dependencies with cardinality
 PacManController "1" --> "1" IEventBus
@@ -316,12 +300,12 @@ GhostController "1" --> "1" IDirectionProvider
 Pellet "0..*" --> "1" IEventBus
 
 %% AI and State Management with cardinality
-GhostController "1" --> "1" GhostStateMachine
+GhostController "1" --> "1" GhostAI : uses as directionProvider
+PacManController "1" --> "0..1" PacManAI : optional AI mode
 GhostAI "1" --> "1" IGhostMovementStrategy
 GhostAI "1" --> "1" IPathfindingService
 PacManAI "1" --> "1" IPacManMovementStrategy
 PacManAI "1" --> "1" IPathfindingService
-GhostStateMachine "1" --> "1" IGhostMovementStrategy
 IGhostMovementStrategy <|.. ChaseStrategy
 IGhostMovementStrategy <|.. ScatterStrategy
 IGhostMovementStrategy <|.. FrightenedStrategy
