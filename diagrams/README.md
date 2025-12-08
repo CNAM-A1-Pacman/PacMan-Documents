@@ -24,10 +24,11 @@ Provides the complete object-oriented class structure including all interfaces a
 
 - Core Interfaces (IEntity, IMovement, IEventBus, IPathfindingService, etc.)
 - Managers (GameManager, LevelManager, ScoreManager)
-- Entities (PacManController, GhostController, Pellet, PowerPellet)
-- Movement System (GridMovement, IDirectionProvider implementations)
-- AI System (GhostStateMachine, Strategy implementations)
+- Entities (PacManController, GhostController, Pellet, PowerPellet, Wall)
+- Movement System (PhysicsMovement, IDirectionProvider implementations)
+- AI System (GhostAI, PacManAI with type-specific strategy interfaces)
 - Services (PathfindingService, AudioService)
+- Configuration (LevelConfig ScriptableObject)
 
 ---
 
@@ -39,9 +40,9 @@ Illustrates the high-level system architecture and component relationships.
 
 - Core Systems (GameManager, ScoreManager, LevelManager, EventBus, UI)
 - Input System (InputReader)
-- Entities (PacMan, Ghosts, Pellets)
-- Movement System (GridMovement)
-- AI System (GhostStateMachine, Strategies)
+- Entities (PacMan, Ghosts, Pellets, Walls)
+- Movement System (PhysicsMovement using Unity Rigidbody2D)
+- AI System (GhostAI, PacManAI with type-specific strategies)
 - Services (Pathfinding, Audio)
 - Interface-based dependencies
 
@@ -110,7 +111,7 @@ Documents all game state machine transitions and their triggers.
 
 #### 7. ghost.mmd - Ghost AI State Diagram
 
-Defines the ghost behavior state machine and AI logic.
+Defines the ghost behavior state machine. State management is handled directly in GhostController with state transitions triggered by timers and events.
 
 **States:**
 
@@ -151,11 +152,11 @@ Provides a detailed flowchart of the Pac-Man update cycle.
 
 **Process:**
 
-1. Get direction from IDirectionProvider (InputReader)
-2. Check if movement is valid (GridMovement.CanMoveTo)
-3. Move to new position
-4. Detect collisions
-5. Publish appropriate events
+1. Get direction from IDirectionProvider (InputReader or PacManAI)
+2. Apply movement via PhysicsMovement with CurrentSpeed
+3. Rigidbody2D updates position
+4. Unity physics detects collisions (OnTriggerEnter2D/OnCollisionEnter2D)
+5. Publish appropriate events via EventBus
 6. Loop
 
 ---
@@ -208,12 +209,14 @@ Documents the complete game initialization sequence.
 
 1. MainMenuUI triggers StartGame
 2. GameManager resets ScoreManager
-3. LevelManager loads level data
-4. LevelManager creates grid and pellets
-5. Spawn Pac-Man with components
-6. Spawn all ghosts with AI
-7. Set game state to Playing
-8. Update UI
+3. LevelManager loads level data and LevelConfig
+4. LevelManager creates grid, walls, and pellets
+5. Spawn Pac-Man with components (InputReader/PacManAI, PhysicsMovement)
+6. Apply speed multiplier from LevelConfig to Pac-Man
+7. Spawn all ghosts with GhostAI and PhysicsMovement
+8. Apply speed multiplier from LevelConfig to ghosts
+9. Set game state to Playing
+10. Update UI
 
 ---
 
@@ -247,17 +250,19 @@ Defines all player interactions with the game system.
 
 ### Design Patterns
 
-- **Strategy Pattern**: Implemented for Ghost AI behaviors (Chase, Scatter, Frightened)
+- **Strategy Pattern**: Implemented with type-specific interfaces - IGhostMovementStrategy (Chase, Scatter, Frightened) and IPacManMovementStrategy (PelletSeek, GhostAvoidance)
 - **Observer Pattern**: EventBus provides decoupled communication between components
-- **State Pattern**: Applied to GameManager and Ghost state machines
-- **Dependency Injection**: Services are injected via interfaces
+- **State Pattern**: Applied to GameManager and integrated directly in GhostController
+- **Dependency Injection**: Services and dependencies are injected via interfaces
 
 ### Coupling Strategy
 
 - Entities communicate through EventBus rather than direct references
 - Managers depend on interfaces rather than concrete implementations
-- Movement logic is separated from entity logic
-- AI logic is decoupled from movement implementation
+- Movement logic is separated from entity logic via PhysicsMovement
+- AI logic is decoupled from movement implementation via IDirectionProvider
+- Collision detection handled by Unity's physics system (Rigidbody2D, Collider2D)
+- Speed management owned by entities, applied through LevelConfig multipliers
 
 ---
 
@@ -272,23 +277,27 @@ Defines all player interactions with the game system.
 
 ### Phase 2: Movement System
 
-1. GridMovement class
+1. PhysicsMovement class (uses Rigidbody2D)
 2. IDirectionProvider interface
 3. InputReader implementation
+4. Wall MonoBehaviour with Collider2D
 
 ### Phase 3: Entities
 
 1. Base Pellet class
 2. PowerPellet (extends Pellet)
-3. PacManController
-4. GhostController
+3. PacManController (implements IEntity)
+4. GhostController (implements IEntity, manages state directly)
+5. LevelConfig ScriptableObject
 
 ### Phase 4: AI System
 
-1. IGhostStrategy interface
-2. Strategy implementations (ScriptableObjects)
-3. GhostStateMachine
-4. GhostAI with pathfinding
+1. IGhostMovementStrategy interface (for ghost AI)
+2. Ghost strategy implementations: ChaseStrategy, ScatterStrategy, FrightenedStrategy (ScriptableObjects)
+3. IPacManMovementStrategy interface (for PacMan AI mode)
+4. PacMan strategy implementations: PelletSeekStrategy, GhostAvoidanceStrategy (ScriptableObjects)
+5. GhostAI class (implements IDirectionProvider)
+6. PacManAI class (implements IDirectionProvider, optional AI mode)
 
 ### Phase 5: Services
 
@@ -341,6 +350,6 @@ entity_relationship.mmd ──> Defines data for ──> class.mmd
 
 ## Document Information
 
-- Last Updated: November 27, 2025
+- Last Updated: December 8, 2025
 - Project: CNAM Pac-Man Unity Game
 - Architecture: SOLID Principles, Event-Driven Design, Data-Oriented Design
