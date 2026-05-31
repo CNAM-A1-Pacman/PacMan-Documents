@@ -1,27 +1,24 @@
 stateDiagram-v2
-    [*] --> Spawning
+    [*] --> Inactive
 
-    Spawning --> Normal : Spawn Complete
+    note right of Inactive
+        Pac-Man has no rich FSM. Behaviour is driven by
+        ResetState() / DeathSequence() toggling the
+        component, renderer, collider and Movement.
+        Eating power pellets affects ghosts, not Pac-Man's state.
+    end note
 
-    Normal --> Moving : Has Input Direction
-    Moving --> Normal : No Valid Movement
+    Inactive --> Active : ResetState() (NewRound / respawn)
 
-    Moving --> Eating : Collision with Pellet
-    Eating --> Moving : Pellet Consumed
+    state Active {
+        [*] --> Controlled
+        Controlled --> Controlled : HandleInput (WASD/arrows) -> Movement.SetDirection
+        Controlled --> Controlled : UpdateRotation toward direction
+        AI --> AI : PacmanAgent.OnActionReceived -> SetDirection
+        Controlled --> AI : aiControlled = true (autopilot/training)
+        AI --> Controlled : aiControlled = false
+    }
 
-    Moving --> PoweredUp : Collision with Power Pellet
-    PoweredUp --> Moving : Power Duration Ends
-
-    PoweredUp --> Eating : Collision with Pellet
-    Eating --> PoweredUp : Still Powered
-
-    PoweredUp --> ChaseGhost : Collision with Frightened Ghost
-    ChaseGhost --> PoweredUp : Ghost Eaten
-
-    Moving --> Dying : Collision with Normal Ghost
-    PoweredUp --> Dying : Collision with Normal Ghost
-    Normal --> Dying : Collision with Normal Ghost
-
-    Dying --> Dead : Death Animation Complete
-    Dead --> Spawning : Respawn (Lives > 0)
-    Dead --> [*] : Game Over (Lives = 0)
+    Active --> Dead : Ghost collision (not frightened) -> PacmanEaten -> DeathSequence
+    Dead --> Active : lives>0, Invoke ResetState after 3s
+    Dead --> [*] : lives==0, GameOver

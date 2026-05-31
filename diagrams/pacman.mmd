@@ -1,25 +1,29 @@
 flowchart TD
 
-A[Pac-Man Update] --> B[Get Input from IDirectionProvider]
-B --> C[directionProvider.GetNextDirection]
-C --> D[PhysicsMovement.Move with CurrentSpeed]
+A[Pacman.Update] --> AI{aiControlled?}
+AI -- No --> B[HandleInput<br/>WASD / Arrow keys]
+B --> C["Movement.SetDirection(dir)"]
+AI -- Yes --> AGENT["PacmanAgent.OnActionReceived<br/>Movement.SetDirection(dir)"]
+AGENT --> C
 
-D --> H[Rigidbody2D Updates Position]
-H --> I{Collision Detection}
+C --> OCC{"Occupied(dir)? BoxCast on obstacleLayer"}
+OCC -- Yes --> QUEUE[Queue as nextDirection]
+OCC -- No --> SET[direction = dir]
+QUEUE --> ROT
+SET --> ROT[UpdateRotation: face movement.direction]
 
-I -- Pellet --> J{Pellet Type?}
-J -- Normal --> K[Publish PelletEaten]
-J -- Power --> L[Publish PowerPelletEaten]
+ROT --> FU[Movement.FixedUpdate]
+FU --> MP[rb.MovePosition<br/>speed * speedMultiplier * dt * direction]
+MP --> RETRY[Movement.Update: retry nextDirection if set]
 
-I -- Ghost --> M{Ghost State?}
-M -- Frightened --> N[Publish GhostEaten]
-M -- Normal/Chase/Scatter --> O[Publish PacManDied]
+RETRY --> TRIG{Unity trigger / collision}
+TRIG -- Pellet --> PE[Pellet.Eat -> GameManager.PelletEaten]
+TRIG -- PowerPellet --> PPE[PowerPellet.Eat -> GameManager.PowerPelletEaten]
+TRIG -- Ghost --> GH[Ghost.OnCollisionEnter2D<br/>GhostEaten or PacmanEaten]
+TRIG -- Passage --> WARP[Passage: teleport to connection]
+TRIG -- None --> A
 
-I -- None --> P[Continue]
-
-K --> P
-L --> P
-N --> P
-O --> Q[Handle Death]
-
-P --> A
+PE --> A
+PPE --> A
+WARP --> A
+GH --> A

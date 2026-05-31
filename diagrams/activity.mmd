@@ -1,53 +1,43 @@
 flowchart TD
 
-A[Game Start] --> B[Load Level Grid]
-B --> LOADCONFIG[Load Level Config]
-LOADCONFIG --> APPLYSPEED[Apply Speed Multipliers]
-APPLYSPEED --> C[Spawn Pac-Man]
-C --> D[Spawn Ghosts]
-D --> E[Enter GameState: Playing]
+A[Scene load: Pacman] --> AW[GameManager.Awake<br/>singleton + FilterEnabledGhosts<br/>build Score/Lives/UI managers]
+AW --> ST[GameManager.Start<br/>score=0, lives=3]
+ST --> NR[NewRound]
+NR --> NRACT[Hide GameOver,<br/>reactivate all pellets,<br/>ResetState ghosts & Pac-Man]
+NRACT --> SPEED[ApplyRoundSpeeds<br/>per-round curve from GameSettings]
+SPEED --> LOOP[Unity game loop<br/>Update / FixedUpdate]
 
-E --> GAMELOOP[Game Loop]
+LOOP --> PAUSE{Esc pressed?}
+PAUSE -- Yes --> PAUSED[PauseManager.Pause<br/>Time.timeScale = 0]
+PAUSED --> PMENU{User choice}
+PMENU -- Resume --> LOOP
+PMENU -- Quit --> ACCUEIL[Load PageAccueil scene]
 
-GAMELOOP --> PAUSE{Pause Input?}
-PAUSE -- Yes --> PAUSED[GameState: Paused]
-PAUSED --> MENU{User Choice}
-MENU -- Resume --> GAMELOOP
-MENU -- Restart --> A
-MENU -- Quit --> EXIT[Exit Game]
+PAUSE -- No --> MOVE[Pac-Man: HandleInput WASD/arrows<br/>or PacmanAgent if aiControlled]
+MOVE --> GMOVE[Ghosts pick direction at Nodes<br/>via active GhostBehavior]
+GMOVE --> PHYS[Movement.FixedUpdate<br/>Rigidbody2D.MovePosition]
+PHYS --> COL{Unity collision / trigger}
 
-PAUSE -- No --> VICTORY{All Pellets Eaten?}
-VICTORY -- Yes --> NEXTLVL[Load Next Level]
-NEXTLVL --> B
+COL -- Pellet trigger --> PEAT[GameManager.PelletEaten<br/>deactivate + Add points]
+PEAT --> REM{Pellets remaining?}
+REM -- Yes --> LOOP
+REM -- No --> RC[currentRound++, OnRoundComplete<br/>Invoke NewRound after 3s]
+RC --> NR
 
-VICTORY -- No --> UPDATE[Update Entities]
-UPDATE --> PACMOVE[Pac-Man Moves]
-PACMOVE --> GHOSTMOVE[Ghosts Move via AI]
-GHOSTMOVE --> COLLISIONS[Check Collisions]
+COL -- PowerPellet trigger --> PPEAT[GameManager.PowerPelletEaten]
+PPEAT --> FRIGHT[Enable Frightened on all ghosts<br/>for pellet.duration, multiplier reset timer]
+FRIGHT --> PEAT
 
-COLLISIONS --> PACCOL{Pac-Man Collision?}
+COL -- Ghost collision --> GSTATE{Ghost frightened?}
+GSTATE -- Yes --> GE[GameManager.GhostEaten<br/>Add points * ghostMultiplier++]
+GE --> GHOME[Ghost teleports to home, returns]
+GHOME --> LOOP
+GSTATE -- No --> PE[GameManager.PacmanEaten<br/>lives--]
+PE --> LIVES{Lives > 0?}
+LIVES -- Yes --> DEATH[Pac-Man DeathSequence<br/>Invoke ResetState after 3s]
+DEATH --> LOOP
+LIVES -- No --> OVER[GameOver<br/>show panel, Time.timeScale = 0]
 
-PACCOL -- Pellet --> PELTYPE{Pellet Type?}
-PELTYPE -- Normal Pellet --> ADDPTS[Add Points]
-ADDPTS --> DESTROY1[Destroy Pellet]
-DESTROY1 --> GAMELOOP
-
-PELTYPE -- Power Pellet --> BIGPTS[Add Bonus Points]
-BIGPTS --> FRIGHTEN[Ghosts Enter Frightened Mode]
-FRIGHTEN --> DESTROY2[Destroy Power Pellet]
-DESTROY2 --> GAMELOOP
-
-PACCOL -- Ghost --> GHOSTSTATE{Ghost State?}
-GHOSTSTATE -- Frightened --> EATGHOST[Eat Ghost]
-EATGHOST --> GHOSTPTS[Add Ghost Points]
-GHOSTPTS --> RESPAWNGHOST[Ghost Returns to House]
-RESPAWNGHOST --> GAMELOOP
-
-GHOSTSTATE -- Normal/Chase/Scatter --> PACDIE[Pac-Man Dies]
-PACDIE --> DECLIVES[Decrease Lives]
-DECLIVES --> CHECKLIVES{Lives > 0?}
-CHECKLIVES -- Yes --> RESPAWN[Respawn Pac-Man & Reset Ghosts]
-RESPAWN --> GAMELOOP
-CHECKLIVES -- No --> GAMEOVER[Game Over]
-
-PACCOL -- No Collision --> GAMELOOP
+COL -- Passage trigger --> WARP[Passage teleports to connection]
+WARP --> LOOP
+COL -- None --> LOOP

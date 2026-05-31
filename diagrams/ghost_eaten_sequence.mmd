@@ -1,19 +1,24 @@
 sequenceDiagram
-    participant P as PacMan
-    participant G as Ghost (Frightened)
-    participant EB as EventBus
-    participant SM as ScoreManager
+    participant P as Pacman
+    participant F as GhostFrightened
+    participant G as Ghost
+    participant H as GhostHome
     participant GM as GameManager
+    participant SM as ScoreManager
 
-    Note over P,G: Ghost in Frightened State
+    Note over P,G: Ghost is in Frightened state (blue)
 
-    P->>G: OnCollision(IEntity)
-    G->>G: CheckState() - Is Frightened
-    G->>EB: Publish(GhostEaten, ghostData)
-    EB->>SM: Notify(GhostEaten)
-    SM->>SM: AddPoints(200/400/800/1600)
-    EB->>GM: Notify(GhostEaten)
-    GM->>G: ReturnToGhostHouse()
-    G->>G: SetState(Eaten)
-    G->>G: Navigate to Ghost House
-    G->>G: SetState(Scatter)
+    P->>F: OnCollisionEnter2D (Pacman layer)
+    F->>F: Eaten()  (eaten = true)
+    F->>G: SetPosition(home.inside.position)
+    F->>H: ghost.home.Enable(duration)
+    F->>F: show eyes only (body/blue/white off)
+    F->>GM: _gameEvents.GhostEaten(ghost)
+
+    GM->>GM: points = ghost.points * ghostMultiplier
+    GM->>SM: Add(points)   (200, 400, 800, 1600...)
+    GM->>GM: ghostMultiplier++
+    GM->>GM: OnGhostEatenEvent?.Invoke(ghost)
+
+    Note over G,H: Eyes navigate home. GhostHome.ExitTransition<br/>returns the ghost to play after its delay.
+    Note over GM: ghostMultiplier resets to 1 when the<br/>power-pellet duration timer (ResetGhostMultiplier) fires.

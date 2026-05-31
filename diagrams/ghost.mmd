@@ -1,11 +1,30 @@
 stateDiagram-v2
-    [*] --> Scatter
+    [*] --> Home : initialBehavior (Pinky/Inky/Clyde, exit delay)
+    [*] --> Scatter : initialBehavior (Blinky, delay 0)
 
-    Scatter --> Chase : TimerEnds
-    Chase --> Scatter : TimerEnds
+    Home --> Scatter : ExitTransition done (inside -> outside)
 
-    Scatter --> Frightened : PowerPellet
-    Chase --> Frightened : PowerPellet
+    Scatter --> Chase : scatter duration ends (OnDisable -> chase.Enable)
+    Chase --> Scatter : chase duration ends (OnDisable -> scatter.Enable)
 
-    Frightened --> Eaten : CaughtByPacman
-    Eaten --> Scatter : ReachedGhostHouse
+    Scatter --> Frightened : PowerPelletEaten (frightened.Enable(duration))
+    Chase --> Frightened : PowerPelletEaten
+
+    Frightened --> Scatter : duration ends (Disable)
+    Frightened --> Eaten : OnCollision with Pac-Man
+
+    Eaten --> Home : SetPosition(home.inside) + home.Enable(duration)
+
+    note right of Home
+        Each "state" is a GhostBehavior MonoBehaviour toggled via
+        Enable()/Disable(). GhostBehavior.Enable schedules Disable
+        after `duration`; each OnDisable enables the next behavior.
+        Frightened forces speedMultiplier = 0.5.
+    end note
+
+    note left of Chase
+        Chase is one assigned variant:
+        GhostChase (Blinky), GhostChaseAmbusher (Pinky),
+        GhostChaseBoo (Inky), GhostChaseFlanker (Clyde).
+        Ghost.chase is auto-detected in Awake.
+    end note

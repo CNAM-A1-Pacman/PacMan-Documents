@@ -1,0 +1,118 @@
+classDiagram
+
+    %% ===== Data model =====
+    class CellType {
+        <<enum>>
+        Empty
+        Wall
+        Pellet
+        PowerPellet
+        GhostHouse
+        GhostHouseInterior
+        GhostHouseDoor
+        PacmanSpawn
+        Tunnel
+    }
+
+    class MapData {
+        + name : string
+        + width : int
+        + height : int
+        + cells : int[]
+        + wallTileIndices : int[]
+        + GetCell(col, row) CellType
+        + SetCell(col, row, CellType)
+        + SetWallTileIndex(col, row, int)
+        + IsWalkable(CellType) bool$
+    }
+
+    %% ===== Static helpers (pure logic) =====
+    class MapCoordinates {
+        <<static>>
+        + MapWidth/MapHeight : int$
+        + ToTilemapCell(col, row) Vector3Int$
+        + ToArrayIndex(Vector3Int) (int,int)$
+        + CellCenterWorld(col, row) Vector3$
+    }
+    class BoundaryPlacer {
+        <<static>>
+        + Apply(MapData)$
+    }
+    class GhostHouseGenerator {
+        <<static>>
+        + Apply(MapData)$
+        + GetCells() List$
+    }
+    class NodeGenerator {
+        <<static>>
+        + FindNodePositions(MapData) List$
+    }
+    class MapValidator {
+        <<static>>
+        + Validate(MapData) ValidationResult$
+    }
+    class ValidationResult {
+        + isValid : bool
+        + errors : List~string~
+        + warnings : List~string~
+    }
+
+    %% ===== Persistence / cross-scene state =====
+    class MapRepository {
+        <<static>>
+        + SaveDirectory : string$
+        + SaveMap(MapData)$
+        + LoadMap(filename) MapData$
+        + ListMaps() List~string~$
+        + DeleteMap(filename)$
+        + ExportMap(MapData, path)$
+        + ImportMap(path) MapData$
+    }
+    class MapSession {
+        <<static>>
+        + CurrentMap : MapData$
+    }
+    class MapDataManager {
+        <<static facade>>
+        + currentMap : MapData$
+        + SaveMap / LoadMap / ListMaps$
+    }
+
+    %% ===== Scene controllers (MonoBehaviour) =====
+    class MapEditorManager {
+        <<MonoBehaviour>>
+        + wallTiles : TileBase[]
+        - grid / wallTilemap / overlayTilemap
+        + paint / brush selection
+    }
+    class MapEditorUI {
+        <<MonoBehaviour>>
+        - editor : MapEditorManager
+        + toolbar, save/load dialogs, validation panel
+    }
+    %% MapLoader: DefaultExecutionOrder(-200) — rebuilds the
+    %% Pacman scene from MapSession.CurrentMap before other scripts.
+    class MapLoader {
+        <<MonoBehaviour>>
+        - wallTilemap / pelletTilemap / nodeTilemap
+        - pelletPrefab / powerPelletPrefab / nodePrefab
+    }
+
+    MapData o-- CellType
+    MapValidator ..> ValidationResult
+    BoundaryPlacer ..> MapData
+    GhostHouseGenerator ..> MapData
+    NodeGenerator ..> MapData
+    MapCoordinates <.. MapData
+    MapDataManager ..> MapRepository
+    MapDataManager ..> MapSession
+
+    MapEditorManager *-- MapEditorUI
+    MapEditorManager ..> MapData : edits
+    MapEditorManager ..> MapValidator : on save
+    MapEditorManager ..> MapRepository : persist
+    MapEditorManager ..> MapSession : hand off to game
+
+    MapLoader ..> MapSession : reads CurrentMap
+    MapLoader ..> NodeGenerator : place nodes
+    MapLoader ..> MapData : rebuild tilemaps/pellets

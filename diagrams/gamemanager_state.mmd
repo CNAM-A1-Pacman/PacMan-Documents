@@ -1,22 +1,30 @@
 stateDiagram-v2
-    [*] --> MainMenu
+    [*] --> Booting : Awake (singleton, filter enabled ghosts)
 
-    MainMenu --> Playing : StartGame()
+    note right of Booting
+        GameManager has no explicit state enum.
+        These phases are driven by method calls,
+        Invoke() delays, and Time.timeScale.
+        Pause is handled separately by PauseManager.
+    end note
 
-    Playing --> Paused : PauseGame()
-    Paused --> Playing : ResumeGame()
-    Paused --> MainMenu : QuitToMenu()
-    Paused --> Playing : RestartGame()
+    Booting --> Playing : Start -> NewRound -> ResetState
 
-    Playing --> LevelComplete : AllPelletsEaten
-    LevelComplete --> Playing : LoadNextLevel()
+    Playing --> RoundComplete : PelletEaten and no pellets remaining
+    RoundComplete --> Playing : Invoke NewRound after 3s (currentRound++)
 
-    Playing --> PacManDied : GhostCaughtPacMan
-    PacManDied --> Playing : RespawnPacMan (Lives > 0)
-    PacManDied --> GameOver : NoLivesRemaining
+    Playing --> PacManDied : PacmanEaten (Ghost collision, not frightened)
+    PacManDied --> Playing : lives>0 -> DeathSequence + Invoke ResetState 3s
+    PacManDied --> GameOver : lives==0
 
-    GameOver --> MainMenu : ReturnToMenu()
-    GameOver --> Playing : RestartGame()
+    Playing --> Paused : PauseManager Esc (Time.timeScale=0)
+    Paused --> Playing : Resume (Esc)
+    Paused --> [*] : Quit -> load PageAccueil
 
-    MainMenu --> [*] : QuitGame()
-    GameOver --> [*] : QuitGame()
+    GameOver --> [*] : panel + timeScale=0, NewGame -> PageAccueil
+
+    state TrainingMode {
+        [*] --> Episode : trainingMode == true
+        Episode --> Episode : PacmanEaten -> ResetState (no GameOver pause)
+        Episode --> Episode : RoundComplete -> continue (no 3s wait)
+    }

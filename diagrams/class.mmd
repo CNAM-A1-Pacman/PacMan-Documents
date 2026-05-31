@@ -1,316 +1,318 @@
 classDiagram
 
-    %% Core Interfaces
-    class IEntity {
+    %% ======================= Interfaces =======================
+    class IGameEvents {
         <<interface>>
-        + Position : Vector2
-        + IsActive : bool
-        + Rigidbody2D : Rigidbody2D
-        + Collider : Collider2D
-        + BaseSpeed : float
-        + CurrentSpeed : float
-        + OnTriggerEnter2D(Collider2D)
-        + OnCollisionEnter2D(Collision2D)
-        + Update()
-        + OnDestroy()
-        + SetSpeed(float)
+        + PelletEaten(Pellet)
+        + PowerPelletEaten(PowerPellet)
+        + GhostEaten(Ghost)
+        + PacmanEaten()
     }
 
-    class IMovement {
+    class IMovable {
         <<interface>>
-        + Move(direction : Vector2, speed : float, deltaTime : float)
-        + Stop()
-        + CurrentDirection : Vector2
-        + CurrentVelocity : Vector2
+        + direction : Vector2
+        + speedMultiplier : float
     }
 
-    class IEventBus {
+    class IBehavior {
         <<interface>>
-        + Subscribe(event, listener)
-        + Publish(event, data)
-        + Unsubscribe(event, listener)
+        + Enable()
+        + Disable()
     }
 
-    class IPathfindingService {
+    class IDurableBehavior {
         <<interface>>
-        + FindPath(nodeA, nodeB) List~Node~
+        + duration : float
+        + Enable(duration : float)
     }
 
-    class IAudioService {
-        <<interface>>
-        + PlaySFX(string)
-        + PlayMusic(string)
-    }
+    IBehavior <|-- IDurableBehavior
 
-    class IInputReader {
-        <<interface>>
-        + GetMovementInput() Vector2
-    }
-
-    class IDirectionProvider {
-        <<interface>>
-        + GetNextDirection() Vector2
-    }
-
-    class ILevelManager {
-        <<interface>>
-        + LoadLevel(int)
-        + GetNode(x, y) Node
-        + IsWalkable(x, y) bool
-        + GetCurrentLevel() int
-        + GetLevelConfig() LevelConfig
-    }
-
-    class IScoreManager {
-        <<interface>>
-        + AddPoints(int)
-        + GetScore() int
-        + Reset()
-    }
-
-    %% Managers (MonoBehaviour)
+    %% ======================= Managers =======================
     class GameManager {
         <<MonoBehaviour>>
-        - IEventBus eventBus
-        - ILevelManager levelManager
-        - IScoreManager scoreManager
-        - IAudioService audioService
-        - GameState currentState
-        + StartGame()
-        + PauseGame()
-        + ResumeGame()
-        + RestartGame()
-        + QuitGame()
-        + GameOver()
-        + SetState(GameState)
-    }
-
-    class LevelManager {
-        <<MonoBehaviour>>
-        - int currentLevel
-        - LevelConfig currentConfig
-        + LoadLevel(int)
-        + GetNode(x, y) Node
-        + IsWalkable(x, y) bool
-        + GetCurrentLevel() int
-        + GetLevelConfig() LevelConfig
+        + Instance : GameManager$
+        - ghosts : Ghost[]
+        - pacman : Pacman
+        - pellets : Transform
+        + trainingMode : bool
+        - scoreManager : ScoreManager
+        - livesManager : LivesManager
+        - uiManager : UIManager
+        - ghostMultiplier : int
+        - currentRound : int
+        + score : int
+        + lives : int
+        + OnPelletEatenEvent : Action~Pellet~
+        + OnPowerPelletEatenEvent : Action~PowerPellet~
+        + OnGhostEatenEvent : Action~Ghost~
+        + OnPacmanEatenEvent : Action
+        + OnRoundCompleteEvent : Action
+        + NewGame()
+        - NewRound()
+        - ApplyRoundSpeeds()
+        - ResetState()
+        - GameOver()
+        + PacmanEaten()
+        + GhostEaten(Ghost)
+        + PelletEaten(Pellet)
+        + PowerPelletEaten(PowerPellet)
+        + HasRemainingPellets() bool
+        + ResetForTraining()
     }
 
     class ScoreManager {
-        <<MonoBehaviour>>
-        - int currentScore
-        + AddPoints(int)
-        + GetScore() int
-        + Reset()
-    }
-
-    class EventBus {
         <<C# Class>>
-        + Subscribe(event, listener)
-        + Publish(event, data)
-        + Unsubscribe(event, listener)
+        - scoreText : Text
+        + Score : int
+        + SetScore(int)
+        + Add(int)
     }
 
-    %% Entities
-    class PacManController {
-        <<MonoBehaviour>>
-        - IDirectionProvider directionProvider
-        - IMovement movement
-        + HandlePelletCollision(Pellet)
-        + HandlePowerPelletCollision(PowerPellet)
-        + HandleGhostCollision(GhostController)
-        + HandleWallCollision(Wall)
-    }
-
-    class PhysicsMovement {
+    class LivesManager {
         <<C# Class>>
-        - Rigidbody2D rigidbody
-        + Move(direction : Vector2, speed : float, deltaTime : float)
-        + Stop()
-        + CurrentDirection : Vector2
-        + CurrentVelocity : Vector2
+        - livesText : Text
+        + Lives : int
+        + SetLives(int)
+        + Decrement() int
     }
 
-    class Wall {
-        <<MonoBehaviour>>
-        - Collider2D collider
-        - bool isWalkable
-        + Position : Vector2
-    }
-
-    class InputReader {
-        <<MonoBehaviour>>
-        + GetMovementInput() Vector2
-        + GetNextDirection() Vector2
-    }
-
-    class GhostController {
-        <<MonoBehaviour>>
-        - IDirectionProvider directionProvider
-        - IMovement movement
-        - IPathfindingService pathfinding
-        - GhostState currentState
-        - float stateTimer
-        + SetStrategy(IGhostMovementStrategy)
-        + ChangeState(GhostState)
-    }
-
-    class GhostAI {
+    class UIManager {
         <<C# Class>>
-        - IGhostMovementStrategy strategy
-        - IPathfindingService pathfinding
-        - PacManController target
-        + GetNextDirection() Vector2
-        + SetStrategy(IGhostMovementStrategy)
+        - gameOverText : Text
+        - gameOverPanel : GameObject
+        + ShowGameOver()
+        + HideGameOver()
     }
 
-    class PacManAI {
-        <<C# Class>>
-        - IPacManMovementStrategy strategy
-        - IPathfindingService pathfinding
-        - List~GhostController~ ghosts
-        + GetNextDirection() Vector2
-        + SetStrategy(IPacManMovementStrategy)
+    %% ======================= Movement / Grid =======================
+    class Movement {
+        <<MonoBehaviour>>
+        + speed : float
+        + speedMultiplier : float
+        + initialDirection : Vector2
+        + obstacleLayer : LayerMask
+        + rb : Rigidbody2D
+        + direction : Vector2
+        + nextDirection : Vector2
+        + startingPosition : Vector3
+        + ResetState()
+        + SetDirection(Vector2, forced : bool)
+        + Occupied(Vector2) bool
     }
 
+    class Node {
+        <<MonoBehaviour>>
+        + obstacleLayer : LayerMask
+        + availableDirections : List~Vector2~
+        + SetDirections(List~Vector2~)
+        - CheckAvailableDirection(Vector2)
+    }
+
+    class Passage {
+        <<MonoBehaviour>>
+        + connection : Transform
+    }
+
+    class AnimatedSprite {
+        <<MonoBehaviour>>
+        + sprites : Sprite[]
+        + animationTime : float
+        + loop : bool
+        + Restart()
+        - Advance()
+    }
+
+    %% ======================= Pac-Man =======================
+    class Pacman {
+        <<MonoBehaviour>>
+        + movement : Movement
+        + aiControlled : bool
+        - HandleInput()
+        - UpdateRotation()
+        + ResetState()
+        + DeathSequence()
+    }
+
+    %% ======================= Pellets =======================
     class Pellet {
         <<MonoBehaviour>>
-        # int points
-        - IEventBus eventBus
-        - Collider2D collider
-        - bool isCollected
-        + OnTriggerEnter(Collider2D)
-        + Collect()
+        + points : int
+        - _gameEvents : IGameEvents
+        + Init(IGameEvents)
+        + GetPointsWhenEaten() int
+        # Eat()
+        - OnTriggerEnter2D(Collider2D)
     }
 
     class PowerPellet {
         <<MonoBehaviour>>
-        - float duration
-        + Collect()
+        + duration : float
     }
 
-    class IGhostMovementStrategy {
-        <<interface>>
-        + GetTargetTile(GhostController ghost, PacManController target) Vector2
-        + CalculateDirection(GhostController ghost) Vector2
-    }
+    Pellet <|-- PowerPellet
 
-    class IPacManMovementStrategy {
-        <<interface>>
-        + GetTargetTile(PacManController pacman, List~GhostController~ ghosts) Vector2
-        + CalculateDirection(PacManController pacman) Vector2
-    }
-
-    class ChaseStrategy {
-        <<ScriptableObject>>
-        + GetTargetTile(GhostController ghost, PacManController target) Vector2
-        + CalculateDirection(GhostController ghost) Vector2
-    }
-
-    class ScatterStrategy {
-        <<ScriptableObject>>
-        - Vector2 homeCorner
-        + GetTargetTile(GhostController ghost, PacManController target) Vector2
-        + CalculateDirection(GhostController ghost) Vector2
-    }
-
-    class FrightenedStrategy {
-        <<ScriptableObject>>
-        + GetTargetTile(GhostController ghost, PacManController target) Vector2
-        + CalculateDirection(GhostController ghost) Vector2
-    }
-
-    class PelletSeekStrategy {
-        <<ScriptableObject>>
-        - ILevelManager levelManager
-        + GetTargetTile(PacManController pacman, List~GhostController~ ghosts) Vector2
-        + CalculateDirection(PacManController pacman) Vector2
-        + FindNearestPellet(Vector2 position) Vector2
-    }
-
-    class GhostAvoidanceStrategy {
-        <<ScriptableObject>>
-        - float safeDistance
-        + GetTargetTile(PacManController pacman, List~GhostController~ ghosts) Vector2
-        + CalculateDirection(PacManController pacman) Vector2
-        + FindSafestDirection(Vector2 position, List~GhostController~ ghosts) Vector2
-    }
-
-    class AudioService {
+    %% ======================= Ghosts =======================
+    class Ghost {
         <<MonoBehaviour>>
-        + PlaySFX(string)
-        + PlayMusic(string)
+        + points : int
+        + movement : Movement
+        + home : GhostHome
+        + scatter : GhostScatter
+        + chase : GhostBehavior
+        + frightened : GhostFrightened
+        + initialBehavior : GhostBehavior
+        + target : Transform
+        + ResetState()
+        + SetPosition(Vector3)
     }
 
-    class PathfindingService {
-        <<C# Class>>
-        - ILevelManager levelManager
-        + FindPath(nodeA, nodeB) List~Node~
+    class GhostBehavior {
+        <<abstract MonoBehaviour>>
+        # ghost : Ghost
+        + duration : float
+        + SetDuration(float)
+        + Enable()
+        + Enable(duration : float)
+        + Disable()
+        # OnTriggerEnter2D(Collider2D)*
+        # OnDisable()*
+        # CanMove() bool
+        # HasAvailableDirections(Node) bool
+        # IsAvailableDirection(Node, Vector2) bool
     }
 
-    class LevelConfig {
-        <<ScriptableObject>>
-        + levelNumber : int
-        + pacmanSpeedMultiplier : float
-        + ghostSpeedMultiplier : float
-        + frightenedDuration : float
-        + scatterDuration : float
-        + chaseDuration : float
+    %% Chase variants (auto-detected into Ghost.chase):
+    %%   GhostChase = Blinky (aim straight at target)
+    %%   GhostChaseAmbusher = Pinky (aim ahead of Pac-Man)
+    %%   GhostChaseBoo = Inky (reverse when faced head-on)
+    %%   GhostChaseFlanker = Clyde (pivot off Blinky)
+    class GhostChase {
+        <<MonoBehaviour>>
+    }
+    class GhostChaseAmbusher {
+        <<MonoBehaviour>>
+        + lookAheadTiles : float
+    }
+    class GhostChaseFlanker {
+        <<MonoBehaviour>>
+        + lookAheadTiles : float
+        + blinky : Ghost
+    }
+    class GhostChaseBoo {
+        <<MonoBehaviour>>
+    }
+    class GhostScatter {
+        <<MonoBehaviour>>
+    }
+    class GhostFrightened {
+        <<MonoBehaviour>>
+        + body : SpriteRenderer
+        + blue : SpriteRenderer
+        + white : SpriteRenderer
+        + Init(IGameEvents)
+        - Eaten()
+        - Flash()
+    }
+    class GhostHome {
+        <<MonoBehaviour>>
+        + inside : Transform
+        + outside : Transform
+        - ExitTransition() IEnumerator
     }
 
-%% Interface Implementations
-IEventBus <|.. EventBus
-ILevelManager <|.. LevelManager
-IScoreManager <|.. ScoreManager
-IAudioService <|.. AudioService
-IPathfindingService <|.. PathfindingService
-IInputReader <|.. InputReader
-IDirectionProvider <|.. InputReader
-IDirectionProvider <|.. GhostAI
-IDirectionProvider <|.. PacManAI
-IMovement <|.. PhysicsMovement
+    GhostBehavior <|-- GhostChase
+    GhostBehavior <|-- GhostChaseAmbusher
+    GhostBehavior <|-- GhostChaseFlanker
+    GhostBehavior <|-- GhostChaseBoo
+    GhostBehavior <|-- GhostScatter
+    GhostBehavior <|-- GhostFrightened
+    GhostBehavior <|-- GhostHome
 
-%% Entity Implementations
-IEntity <|.. PacManController
-IEntity <|.. GhostController
+    class GhostEyes {
+        <<MonoBehaviour>>
+        + eyesUp/Down/Left/Right : Sprite
+        - UpdateEyeSprite()
+    }
 
-%% Inheritance
-Pellet <|-- PowerPellet
+    class GhostWallRecovery {
+        <<MonoBehaviour>>
+        + Recover(Movement)
+    }
 
-%% Manager Dependencies (using interfaces with cardinality)
-GameManager "1" --> "1" IEventBus
-GameManager "1" --> "1" ILevelManager
-GameManager "1" --> "1" IScoreManager
-GameManager "1" --> "1" IAudioService
+    class GhostKind {
+        <<enum>>
+        Blinky
+        Pinky
+        Inky
+        Clyde
+    }
 
-%% LevelManager Dependencies
-LevelManager "1" --> "1" LevelConfig
-LevelManager "1" --> "0..*" Pellet : manages
-LevelManager "1" --> "0..*" Wall : manages
+    class GhostKindResolver {
+        <<static>>
+        + Count : int$
+        + GameObjectName(GhostKind) string$
+        + TryResolve(string, out GhostKind) bool$
+    }
 
-%% Entity Dependencies with cardinality
-PacManController "1" --> "1" IEventBus
-PacManController "1" --> "1" IMovement
-PacManController "1" --> "1" IDirectionProvider
+    %% ======================= Settings / Difficulty =======================
+    class GameSettings {
+        <<static>>
+        + PacmanSpeedLevel : int$
+        + GhostSpeedLevel : int$
+        + PowerPelletDurationLevel : int$
+        + GhostPrisonDurationLevel : int$
+        + AutopilotEnabled : bool$
+        + IsGhostEnabled(GhostKind) bool$
+        + SetGhostEnabled(GhostKind, bool)$
+        + EnabledGhostCount : int$
+        + PacmanSpeed : float$
+        + GhostSpeed : float$
+        + PowerPelletDuration : float$
+        + ComputeGhostSpeedForRound(int) float$
+        + ComputePacManSpeedForRound(int) float$
+    }
 
-GhostController "1" --> "1" IEventBus
-GhostController "1" --> "1" IMovement
-GhostController "1" --> "1" IDirectionProvider
+    class GameSettingsApplier {
+        <<MonoBehaviour>>
+        - ApplyPacmanSpeed()
+        - ApplyGhostSpeed()
+        - ApplyPelletDuration()
+        - ApplyGhostExitDelays()
+    }
 
-Pellet "0..*" --> "1" IEventBus
+    class DifficultyScoreCalculator {
+        <<static>>
+        + ComputeDifficultyIndex(...) int$
+        + GetDifficultyLabel(int) string$
+        + GetDifficultyColorHex(int) string$
+    }
 
-%% AI and State Management with cardinality
-GhostController "1" --> "1" GhostAI : uses as directionProvider
-PacManController "1" --> "0..1" PacManAI : optional AI mode
-GhostAI "1" --> "1" IGhostMovementStrategy
-GhostAI "1" --> "1" IPathfindingService
-PacManAI "1" --> "1" IPacManMovementStrategy
-PacManAI "1" --> "1" IPathfindingService
-IGhostMovementStrategy <|.. ChaseStrategy
-IGhostMovementStrategy <|.. ScatterStrategy
-IGhostMovementStrategy <|.. FrightenedStrategy
-IPacManMovementStrategy <|.. PelletSeekStrategy
-IPacManMovementStrategy <|.. GhostAvoidanceStrategy
-PelletSeekStrategy "1" --> "1" ILevelManager
+    %% ======================= Interface realizations =======================
+    IGameEvents <|.. GameManager
+    IMovable <|.. Movement
+    IDurableBehavior <|.. GhostBehavior
 
-PathfindingService "1" --> "1" ILevelManager
+    %% ======================= Composition / dependencies =======================
+    GameManager "1" *-- "1" ScoreManager
+    GameManager "1" *-- "1" LivesManager
+    GameManager "1" *-- "1" UIManager
+    GameManager "1" --> "0..*" Ghost : controls
+    GameManager "1" --> "1" Pacman : controls
+    GameManager "1" --> "0..*" Pellet : tracks
+
+    Pacman "1" *-- "1" Movement
+    Ghost "1" *-- "1" Movement
+    Ghost "1" o-- "1..*" GhostBehavior : components
+    Ghost "1" --> "1" Pacman : target
+    GhostFrightened ..> IGameEvents : notifies GhostEaten
+    GhostEyes ..> Movement : reads direction
+    Pellet ..> GameManager : PelletEaten()
+    PowerPellet ..> GameManager : PowerPelletEaten()
+
+    GameManager ..> GameSettings : reads speeds / round
+    GameSettingsApplier ..> GameSettings : applies
+    GameManager ..> GhostKindResolver : filter enabled
+    GameSettings ..> GhostKind
+    DifficultyScoreCalculator ..> GameSettings

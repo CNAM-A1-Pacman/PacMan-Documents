@@ -1,75 +1,83 @@
 graph TB
-    subgraph "Unity Project Structure"
-        subgraph "Scenes"
-            MainMenu[MainMenuScene]
-            GameScene[GameScene]
+    subgraph Project["Unity Project (Assets/)"]
+
+        subgraph Scenes["Scenes/"]
+            Accueil[PageAccueil<br/>Menu, LoadingBar]
+            Choix[ChoixTypeJeu<br/>MapSelectionMenu, DifficultyModal]
+            Editor[MapEditor<br/>MapEditorManager + MapEditorUI]
+            Game[Pacman<br/>main game]
+            Auto[Pacman_Autopilot<br/>game + ML autopilot]
+            Train[Pacman_Training<br/>game + ML training]
         end
 
-        subgraph "GameScene Hierarchy"
-            GameMgr[GameObject: GameManager<br/>- GameManager.cs]
-            LevelMgr[GameObject: LevelManager<br/>- LevelManager.cs]
-            ScoreMgr[GameObject: ScoreManager<br/>- ScoreManager.cs]
-            AudioMgr[GameObject: AudioService<br/>- AudioService.cs]
-            EventSys[GameObject: EventBus<br/>- EventBus.cs]
+        subgraph GameHierarchy["Pacman scene hierarchy"]
+            GMObj[GameObject: GameManager<br/>GameManager.cs]
+            Applier[GameObject: GameSettingsApplier]
+            PauseObj[GameObject: PauseManager]
+            MapLoaderObj[GameObject: MapLoader]
+            CanvasUI[Canvas: Score / Lives / Round / GameOver]
 
-            InputSys[GameObject: InputSystem<br/>- InputReader.cs]
+            Grid[Grid + Tilemaps: Walls / Pellets / Nodes]
+            PelletsObj[GameObject: Pellets<br/>Pellet + PowerPellet]
+            NodesObj[Nodes: Node.cs]
+            PassageObj[Passages: Passage.cs]
 
-            Canvas[Canvas: UI]
-            GameUI[GameObject: GameUI<br/>- UIManager.cs]
-            PauseUI[GameObject: PauseMenu<br/>- PauseMenuUI.cs]
-
-            Grid[Grid: Level]
-            Walls[TileMap: Walls]
-            Pellets[GameObject: PelletContainer]
-
-            PacManObj[GameObject: PacMan<br/>- PacManController.cs]
-            GhostContainer[GameObject: Ghosts]
-            Ghost1[GameObject: Blinky<br/>- GhostController.cs]
-            Ghost2[GameObject: Pinky<br/>- GhostController.cs]
-            Ghost3[GameObject: Inky<br/>- GhostController.cs]
-            Ghost4[GameObject: Clyde<br/>- GhostController.cs]
+            PacObj[GameObject: Pacman<br/>Pacman + Movement + AnimatedSprite]
+            G1[Ghost_Blinky<br/>Ghost + GhostChase]
+            G2[Ghost_Pinky<br/>Ghost + GhostChaseAmbusher]
+            G3[Ghost_Inky<br/>Ghost + GhostChaseBoo]
+            G4[Ghost_Clyde<br/>Ghost + GhostChaseFlanker]
         end
 
-        subgraph "ScriptableObjects"
-            ChaseData[ChaseStrategy.asset]
-            ScatterData[ScatterStrategy.asset]
-            FrightenedData[FrightenedStrategy.asset]
-            LevelData[LevelData.asset]
-            AudioData[AudioClips.asset]
+        subgraph Prefabs["Prefabs/"]
+            PfBase[Ghost_Base - variant parent]
+            PfGhosts[Ghost_Blinky/Pinky/Inky/Clyde]
+            PfPac[Pacman]
+            PfPellet[Pellet / PowerPellet]
+            PfNode[Node]
         end
 
-        subgraph "Scripts"
-            Interfaces[Interfaces/<br/>IEntity, IMovement, etc.]
-            Entities[Entities/<br/>Controllers]
-            Managers[Managers/<br/>Game, Level, Score]
-            AI[AI/<br/>Strategies, StateMachine]
-            Services[Services/<br/>Pathfinding, Audio]
-            Movement[Movement/<br/>GridMovement]
+        subgraph Scripts["Scripts/"]
+            SCore[Root: GameManager, Pacman, Ghost,<br/>Movement, Pellet, Node, *Manager]
+            SInt[Interfaces/: IGameEvents, IMovable,<br/>IBehavior, IDurableBehavior]
+            SMap[MapEditor/: MapData, MapRepository,<br/>MapLoader, MapValidator, NodeGenerator...]
+            SML[ML/: PacmanAgent, TrainingManager,<br/>AgentActivator, reward/detector helpers]
+        end
+
+        subgraph Assets["Data assets"]
+            Onnx[ML-Agents/Models/*.onnx]
+            PPO[ML-Agents/config/pacman_ppo.yaml]
+            SecondMap[StreamingAssets/Maps/secondMap.json]
+            CustomMaps[persistentData/CustomMaps/*.json]
         end
     end
 
-    GameScene --> GameMgr
-    GameScene --> LevelMgr
-    GameScene --> ScoreMgr
-    GameScene --> AudioMgr
-    GameScene --> EventSys
-    GameScene --> InputSys
-    GameScene --> Canvas
+    Accueil --> Choix
+    Choix --> Editor
+    Choix --> Game
+    Choix --> Auto
+    Editor --> Game
 
-    Canvas --> GameUI
-    Canvas --> PauseUI
+    Game --> GMObj
+    Game --> Applier
+    Game --> PauseObj
+    Game --> MapLoaderObj
+    Game --> CanvasUI
+    Game --> Grid
+    Grid --> PelletsObj
+    Grid --> NodesObj
+    Grid --> PassageObj
+    Game --> PacObj
+    Game --> G1
+    Game --> G2
+    Game --> G3
+    Game --> G4
 
-    GameScene --> Grid
-    Grid --> Walls
-    Grid --> Pellets
+    PfBase -.variant.-> PfGhosts
+    G1 -.instance of.-> PfGhosts
+    PacObj -.instance of.-> PfPac
 
-    GameScene --> PacManObj
-    GameScene --> GhostContainer
-    GhostContainer --> Ghost1
-    GhostContainer --> Ghost2
-    GhostContainer --> Ghost3
-    GhostContainer --> Ghost4
-
-    Ghost1 -.uses.-> ChaseData
-    Ghost1 -.uses.-> ScatterData
-    Ghost1 -.uses.-> FrightenedData
+    MapLoaderObj -.reads.-> CustomMaps
+    MapLoaderObj -.reads.-> SecondMap
+    Auto -.loads.-> Onnx
+    Train -.trains via.-> PPO

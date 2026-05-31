@@ -1,18 +1,31 @@
 sequenceDiagram
-    participant P as PacMan
-    participant Pel as Pellet
-    participant EB as EventBus
-    participant SM as ScoreManager
+    participant P as Pacman
+    participant Pel as PowerPellet
     participant GM as GameManager
-    participant G as Ghost
+    participant SM as ScoreManager
+    participant G as Ghost[]
+    participant F as GhostFrightened
 
-    Note over P,G: Power Pellet Eaten Sequence
+    Note over P,F: Power Pellet eaten sequence
 
-    P->>Pel: OnCollision(IEntity)
-    Pel->>EB: Publish(PowerPelletEaten, data)
-    EB->>SM: Notify(PowerPelletEaten)
-    SM->>SM: AddPoints(50)
-    EB->>GM: Notify(PowerPelletEaten)
-    GM->>G: SetState(Frightened)
-    G->>G: Switch strategy to FrightenedStrategy
-    Pel->>Pel: OnDestroy()
+    P->>Pel: OnTriggerEnter2D (Pacman layer)
+    Pel->>Pel: Eat()
+    Pel->>GM: PowerPelletEaten(this)
+
+    loop For each ghost
+        GM->>G: frightened.Enable(pellet.duration)
+        G->>F: Enable(duration)
+        F->>F: body off, blue on, eyes off
+        F->>G: movement.speedMultiplier = 0.5
+        F->>F: Invoke(Flash, duration/2)
+        F->>F: Invoke(Disable, duration)
+    end
+
+    GM->>GM: OnPowerPelletEatenEvent?.Invoke(pellet)
+    GM->>GM: PelletEaten(pellet)
+    GM->>Pel: gameObject.SetActive(false)
+    GM->>SM: Add(pellet.points)
+    GM->>GM: CancelInvoke(ResetGhostMultiplier)
+    GM->>GM: Invoke(ResetGhostMultiplier, pellet.duration)
+
+    Note over GM,F: After duration: Flash (blue->white), then Disable<br/>restores sprites and speedMultiplier = 1

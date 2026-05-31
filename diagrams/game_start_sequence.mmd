@@ -1,34 +1,46 @@
 sequenceDiagram
-    participant UI as MainMenuUI
-    participant GM as GameManager
-    participant LM as LevelManager
-    participant EB as EventBus
-    participant SM as ScoreManager
-    participant Pac as PacManController
-    participant Ghosts as GhostControllers
+    participant U as Player
+    participant Modal as DifficultyModal
+    participant GS as GameSettings (static)
+    participant MDM as MapDataManager (-> MapSession)
+    participant Loader as MapLoader (-200)
+    participant Applier as GameSettingsApplier (-150)
+    participant GM as GameManager (-100)
+    participant TM as TrainingManager
+    participant G as Ghost / Pacman
 
-    UI->>GM: StartGame()
-    GM->>SM: Reset()
-    GM->>LM: LoadLevel(1)
-    LM->>LM: Parse level data
-    LM->>LM: Load LevelConfig for level 1
-    LM->>LM: Create grid nodes
-    LM->>LM: Instantiate pellets
-    LM->>EB: Publish(LevelLoaded)
+    Note over U,Modal: ChoixTypeJeu scene
+    U->>Modal: pick map + difficulty pips + ghost toggles + autopilot
+    Modal->>GS: set speed/duration levels, SetGhostEnabled, AutopilotEnabled
+    U->>Modal: click "Jouer" (StartGame)
+    Modal->>GS: PendingAutopilotLaunch = AutopilotEnabled (one-shot)
+    alt Map 2 selected
+        Modal->>MDM: currentMap = ImportMap(secondMap.json)
+    else Map 1 (default)
+        Modal->>MDM: currentMap = null
+    end
+    Modal->>Modal: SceneManager.LoadScene("Pacman")
 
-    GM->>Pac: Spawn at start position
-    Pac->>Pac: Initialize(InputReader, PhysicsMovement)
-    Pac->>Pac: SetSpeed(baseSpeed * config.pacmanSpeedMultiplier)
-
-    GM->>Ghosts: Spawn all ghosts
-    loop For each ghost
-        Ghosts->>Ghosts: Initialize(GhostAI, PhysicsMovement)
-        Ghosts->>Ghosts: SetSpeed(baseSpeed * config.ghostSpeedMultiplier)
-        Ghosts->>Ghosts: ChangeState(Scatter)
+    Note over Loader,GM: Pacman scene loads (DefaultExecutionOrder)
+    Loader->>MDM: read currentMap
+    alt custom map selected
+        Loader->>Loader: rebuild tilemaps, spawn pellets, NodeGenerator
+    else default scene map
+        Loader->>Loader: do nothing
     end
 
-    GM->>GM: SetState(Playing)
-    GM->>EB: Publish(GameStarted)
-    EB->>UI: Notify(GameStarted)
-    UI->>UI: Hide main menu
-    UI->>UI: Show game UI
+    Applier->>GS: read speeds / durations / exit delays
+    Applier->>G: movement.speed, PowerPellet.duration, GhostHome.SetDuration
+
+    GM->>GM: Awake: singleton + FilterEnabledGhosts(GameSettings)
+    GM->>GM: build ScoreManager / LivesManager / UIManager
+    G->>G: Ghost.Awake: resolve movement/home/scatter/frightened/chase
+    GM->>GM: Start: SetScore(0), SetLives(3), NewRound()
+    GM->>G: ResetState (ghosts + Pac-Man)
+    GM->>GM: ApplyRoundSpeeds (per-round curve)
+
+    opt PendingAutopilotLaunch or ML training/inference scene
+        TM->>GS: read PendingAutopilotLaunch (then clear it)
+        TM->>G: AgentActivator.SetActive(true) -> Pacman.aiControlled = true
+        TM->>GM: trainingMode = true
+    end
